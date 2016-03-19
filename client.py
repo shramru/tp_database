@@ -6,7 +6,7 @@ data = {
         'about': 'vladislav',
         'name': 'vladislav',
         'email': 'vladislav@mail.ru',
-        'isAnonymous' : True
+        'isAnonymous' : False
 }
 
 req = urllib2.Request('http://localhost:9998/db/api/user/create/')

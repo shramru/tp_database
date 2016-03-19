@@ -10,7 +10,6 @@ import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.util.Map;
 
-
 /**
  * Created by vladislav on 18.03.16.
  */
@@ -24,19 +23,35 @@ public class User {
     @Produces(MediaType.APPLICATION_JSON)
     public Response create(final String input, @Context HttpServletRequest request) {
         JSONObject jsonObject = new JSONObject(input);
+        JSONObject jsonResult = new JSONObject();
 
-        String columns = String.format("username, about, name, email%s", jsonObject.has("isAnonymous") ? ", isAnonymous" : "");
-        String values = String.format("'%s', '%s', '%s', '%s'%s",
+        String values = String.format("'%s', '%s', '%s', '%s', '%s'",
                 jsonObject.getString("username"), jsonObject.getString("about"), jsonObject.getString("name"), jsonObject.getString("email"),
-                jsonObject.has("isAnonymous") ? ", " + (jsonObject.getBoolean("isAnonymous") ? '1' : '0') : "");
+                jsonObject.has("isAnonymous") ? (jsonObject.getBoolean("isAnonymous") ? '1' : '0') : '0');
 
         try {
-            RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user (%s) VALUES (%s)", columns, values));
+            RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user (username, about, name, email, isAnonymous) VALUES (%s)", values));
+            RestApplication.DATABASE.execQuery(String.format("SELECT * FROM user where email='%s'", jsonObject.getString("email")),
+                    result -> {
+                        JSONObject response = new JSONObject();
+
+                        result.next();
+                        response.put("about", result.getString("about"));
+                        response.put("email", result.getString("email"));
+                        response.put("id", result.getString("uID"));
+                        response.put("isAnonymous", result.getBoolean("isAnonymous"));
+                        response.put("name", result.getString("name"));
+                        response.put("username", result.getString("username"));
+
+                        jsonResult.put("code", 0);
+                        jsonResult.put("response", response);
+
+                    });
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
-        return Response.status(Response.Status.OK).entity("OK").build();
+        return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 
     @GET
