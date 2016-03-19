@@ -1,11 +1,14 @@
 package rest;
 
+import org.json.JSONObject;
+
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Map;
 
 /**
  * Created by vladislav on 18.03.16.
@@ -18,53 +21,60 @@ public class Post {
     @Path("create")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response create(@Context HttpServletRequest request) {
-        return null;
+    public Response create(final String input, @Context HttpServletRequest request) {
+        JSONObject jsonObject = new JSONObject(input);
+        return Response.status(Response.Status.OK).build();
     }
 
     @GET
     @Path("details")
     @Produces(MediaType.APPLICATION_JSON)
     public Response details(@Context HttpServletRequest request) {
-        return null;
+        Map<String, String[]> params = request.getParameterMap();
+        return Response.status(Response.Status.OK).build();
     }
 
     @GET
     @Path("list")
     @Produces(MediaType.APPLICATION_JSON)
     public Response list(@Context HttpServletRequest request) {
-        return null;
+        Map<String, String[]> params = request.getParameterMap();
+        return Response.status(Response.Status.OK).build();
     }
 
     @POST
     @Path("remove")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response remove(@Context HttpServletRequest request) {
-        return null;
+    public Response remove(final String input, @Context HttpServletRequest request) {
+        JSONObject jsonObject = new JSONObject(input);
+        return Response.status(Response.Status.OK).build();
     }
 
     @POST
     @Path("restore")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response restore(@Context HttpServletRequest request) {
-        return null;
+    public Response restore(final String input, @Context HttpServletRequest request) {
+        JSONObject jsonObject = new JSONObject(input);
+        return Response.status(Response.Status.OK).build();
     }
 
     @POST
     @Path("update")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response update(@Context HttpServletRequest request) {
-        return null;
+    public Response update(final String input, @Context HttpServletRequest request) {
+        JSONObject jsonObject = new JSONObject(input);
+        return Response.status(Response.Status.OK).build();
     }
 
     @POST
     @Path("vote")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response vote(@Context HttpServletRequest request) {
-        return null;
+    public Response vote(final String input, @Context HttpServletRequest request) {
+        JSONObject jsonObject = new JSONObject(input);
+        return Response.status(Response.Status.OK).build();
     }
 }

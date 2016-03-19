@@ -1,9 +1,12 @@
 package main;
 
+import db.Database;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.servlet.ServletContainer;
+
+import javax.xml.crypto.Data;
 
 /**
  * Created by vladislav on 18.03.16.
@@ -24,10 +27,10 @@ public class Main {
             System.exit(1);
         }
 
-        System.out.append("Starting at port: ").append(String.valueOf(port)).append('\n');
+        System.out.append("Jetty starting at port: ").append(String.valueOf(port)).append('\n');
 
         final Server server = new Server(port);
-        final ServletContextHandler contextHandler = new ServletContextHandler(server, "db/api/", ServletContextHandler.SESSIONS);
+        final ServletContextHandler contextHandler = new ServletContextHandler(server, "/db/api", ServletContextHandler.SESSIONS);
 
         final ServletHolder servletHolder = new ServletHolder(ServletContainer.class);
         servletHolder.setInitParameter("javax.ws.rs.Application", "rest.RestApplication");
