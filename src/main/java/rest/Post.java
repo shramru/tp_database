@@ -22,8 +22,10 @@ public class Post {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response create(final String input, @Context HttpServletRequest request) {
+        JSONObject jsonResult = new JSONObject();
+
         JSONObject jsonObject = new JSONObject(input);
-        return Response.status(Response.Status.OK).build();
+        return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 
     @GET
@@ -31,7 +33,9 @@ public class Post {
     @Produces(MediaType.APPLICATION_JSON)
     public Response details(@Context HttpServletRequest request) {
         Map<String, String[]> params = request.getParameterMap();
-        return Response.status(Response.Status.OK).build();
+        JSONObject jsonResult = new JSONObject();
+
+        return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 
     @GET
@@ -39,7 +43,9 @@ public class Post {
     @Produces(MediaType.APPLICATION_JSON)
     public Response list(@Context HttpServletRequest request) {
         Map<String, String[]> params = request.getParameterMap();
-        return Response.status(Response.Status.OK).build();
+        JSONObject jsonResult = new JSONObject();
+
+        return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 
     @POST
@@ -47,8 +53,10 @@ public class Post {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response remove(final String input, @Context HttpServletRequest request) {
+        JSONObject jsonResult = new JSONObject();
+
         JSONObject jsonObject = new JSONObject(input);
-        return Response.status(Response.Status.OK).build();
+        return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 
     @POST
@@ -56,8 +64,10 @@ public class Post {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response restore(final String input, @Context HttpServletRequest request) {
+        JSONObject jsonResult = new JSONObject();
+
         JSONObject jsonObject = new JSONObject(input);
-        return Response.status(Response.Status.OK).build();
+        return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 
     @POST
@@ -65,8 +75,10 @@ public class Post {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response update(final String input, @Context HttpServletRequest request) {
+        JSONObject jsonResult = new JSONObject();
+
         JSONObject jsonObject = new JSONObject(input);
-        return Response.status(Response.Status.OK).build();
+        return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 
     @POST
@@ -74,7 +86,9 @@ public class Post {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response vote(final String input, @Context HttpServletRequest request) {
+        JSONObject jsonResult = new JSONObject();
+
         JSONObject jsonObject = new JSONObject(input);
-        return Response.status(Response.Status.OK).build();
+        return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 }

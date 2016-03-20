@@ -1,5 +1,4 @@
-import json
-import urllib2
+import json, urllib2, time
 
 data = {
         'username': 'vlad',
@@ -11,10 +10,10 @@ data = {
 
 req = urllib2.Request('http://localhost:9998/db/api/user/create/')
 req.add_header('Content-Type', 'application/json')
+start = time.time()
+response = urllib2.urlopen(req, json.dumps(data))
+end = time.time()
 
 print json.dumps(data)
-
-response = urllib2.urlopen(req, json.dumps(data))
-
-response_body = response.read()
-print response_body
+print (end - start) * 1000
+print response.read()
