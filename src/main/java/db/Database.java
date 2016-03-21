@@ -39,10 +39,19 @@ public class Database {
         }
     }
 
-    public void execUpdate(String update) throws SQLException {
+    public int execUpdate(String update) throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
             try (Statement stmt = connection.createStatement()) {
-                stmt.execute(update);
+                stmt.executeUpdate(update, Statement.RETURN_GENERATED_KEYS);
+                int res = -1;
+
+                try (ResultSet rs = stmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        res = rs.getInt(1);
+                    }
+                }
+
+                return res;
             }
         }
     }

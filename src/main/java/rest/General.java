@@ -43,6 +43,25 @@ public class General {
     public Response details(@Context HttpServletRequest request) {
         JSONObject jsonResult = new JSONObject();
 
+        try {
+            RestApplication.DATABASE.execQuery("CALL status",
+                    result -> {
+                        JSONObject response = new JSONObject();
+
+                        result.next();
+                        response.put("user", result.getInt("user"));
+                        response.put("thread", result.getInt("thread"));
+                        response.put("forum", result.getInt("forum"));
+                        response.put("post", result.getInt("post"));
+
+                        jsonResult.put("code", 0);
+                        jsonResult.put("response", response);
+                    });
+        } catch (SQLException e) {
+            jsonResult.put("code", 4);
+            jsonResult.put("response", "Unknown error");
+        }
+
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 }
