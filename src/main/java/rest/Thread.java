@@ -1,5 +1,6 @@
 package rest;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.inject.Singleton;
@@ -16,6 +17,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.NoSuchElementException;
+
+import static rest.Post.postDetails;
 
 /**
  * Created by vladislav on 18.03.16.
@@ -134,6 +137,47 @@ public class Thread {
     public Response list(@Context HttpServletRequest request) {
         Map<String, String[]> params = request.getParameterMap();
         JSONObject jsonResult = new JSONObject();
+
+        try {
+            String query = "";
+            if (params.containsKey("forum")) {
+                String shortName = params.get("forum")[0];
+                query = String.format("SELECT tID FROM thread WHERE forum='%s'%s ORDER BY date DESC", shortName,
+                        (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
+            } else if (params.containsKey("user")) {
+                String id = params.get("user")[0];
+                query = String.format("SELECT tID FROM thread WHERE user='%s'%s ORDER BY date DESC", id,
+                        (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
+            }
+
+            if (params.containsKey("order"))
+                query = query.replace("DESC", params.get("order")[0]);
+            if (params.containsKey("limit"))
+                query += " LIMIT " + params.get("limit")[0];
+
+            RestApplication.DATABASE.execQuery(query,
+                    result -> {
+                        JSONArray jsonArray = new JSONArray();
+
+                        while (result.next()) {
+                            JSONObject post = new JSONObject();
+                            threadDetails(result.getString("pID"), post);
+                            jsonArray.put(post);
+                        }
+
+                        jsonResult.put("code", 0);
+                        jsonResult.put("response", jsonArray);
+                    });
+        } catch (SQLException e) {
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
+        } catch (NullPointerException e) {
+            jsonResult.put("code", 3);
+            jsonResult.put("response", "Invalid request");
+        } catch (RuntimeException e) {
+            jsonResult.put("code", 4);
+            jsonResult.put("response", "Unknown error");
+        }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }

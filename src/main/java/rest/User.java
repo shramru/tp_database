@@ -285,8 +285,8 @@ public class User {
 
         try {
             String email = params.get("user")[0];
-            String query = String.format("SELECT u2.email FROM ((user u1 join user_user uu on u1.uID=uu.follower) join user u2 on uu.followee=u2.uID) WHERE u1.email='%s'%s ORDER BY u2.name DESC", email,
-                    (params.containsKey("since_id") ? String.format(" AND u2.uID >= %s", params.get("since_id")[0]) : ""));
+            String query = String.format("SELECT pID FROM user u JOIN post p ON u.uID=p.uID WHERE u.email='%s'%s ORDER BY p.date DESC", email,
+                    (params.containsKey("since") ? String.format(" AND p.date >= '%s'", params.get("since")[0]) : ""));
             if (params.containsKey("order"))
                 query = query.replace("DESC", params.get("order")[0]);
             if (params.containsKey("limit"))
@@ -297,9 +297,9 @@ public class User {
                         JSONArray jsonArray = new JSONArray();
 
                         while (result.next()) {
-                            JSONObject user = new JSONObject();
-                            userDetails(result.getString("email"), user);
-                            jsonArray.put(user);
+                            JSONObject post = new JSONObject();
+                            Post.postDetails(result.getString("pID"), post);
+                            jsonArray.put(post);
                         }
 
                         jsonResult.put("code", 0);
