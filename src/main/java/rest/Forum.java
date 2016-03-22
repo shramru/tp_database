@@ -1,8 +1,8 @@
 package rest;
 
-import org.json.JSONException;
+//import org.json.JSONException;
+import org.json.JSONArray;
 import org.json.JSONObject;
-
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -10,7 +10,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
+import java.text.ParseException;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * Created by vladislav on 18.03.16.
@@ -29,38 +31,39 @@ public class Forum {
         try {
             JSONObject jsonObject = new JSONObject(input);
 
-            String values = String.format("'%s', '%s', '%s', '%s', '%s'",
-                    jsonObject.get("username"), jsonObject.get("about"), jsonObject.get("name"), jsonObject.get("email"),
-                    jsonObject.has("isAnonymous") ? (jsonObject.getBoolean("isAnonymous") ? '1' : '0') : '0').replaceAll("'null'", "null");
+            String a = jsonObject.getString("name");
 
-            RestApplication.DATABASE.execUpdate(String.format("INSERT INTO forum (name, about, name, email, isAnonymous) VALUES (%s)", values));
-            RestApplication.DATABASE.execQuery(String.format("SELECT * FROM user where email='%s'", jsonObject.getString("email")),
-                    result -> {
-                        JSONObject response = new JSONObject();
+            String values = String.format("'%s', '%s', '%s'",
+                    jsonObject.getString("name"), jsonObject.getString("short_name"), jsonObject.getString("user"));
 
-                        result.next();
-                        response.put("about", result.getString("about") == null ? JSONObject.NULL : result.getString("about"));
-                        response.put("email", result.getString("email"));
-                        response.put("id", result.getInt("uID"));
-                        response.put("isAnonymous", result.getBoolean("isAnonymous"));
-                        response.put("name", result.getString("name") == null ? JSONObject.NULL : result.getString("name"));
-                        response.put("username", result.getString("username") == null ? JSONObject.NULL : result.getString("username"));
+            int fID = RestApplication.DATABASE.execUpdate(String.format("INSERT INTO forum (name, short_name, user) VALUES (%s)", values));
+            jsonObject.put("id", fID);
 
-                        jsonResult.put("code", 0);
-                        jsonResult.put("response", response);
-                    });
+            jsonResult.put("code", 0);
+            jsonResult.put("response", jsonObject);
         } catch (SQLException e) {
             jsonResult.put("code", 5);
             jsonResult.put("response", "User exists");
-        } catch (JSONException e) {
+        } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-        } catch (RuntimeException e) {
+        } catch (NoSuchElementException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
         }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
+    }
+
+    public static void forumDetails(String shortName, JSONObject response) throws SQLException {
+        RestApplication.DATABASE.execQuery(String.format("SELECT fID, name, user FROM forum WHERE short_name='%s'", shortName),
+                result -> {
+                    result.next();
+                    response.put("short_name", shortName);
+                    response.put("id", result.getInt("fID"));
+                    response.put("name", result.getString("name"));
+                    response.put("user", result.getString("user"));
+                });
     }
 
     @GET
@@ -69,6 +72,34 @@ public class Forum {
     public Response details(@Context HttpServletRequest request) {
         Map<String, String[]> params = request.getParameterMap();
         JSONObject jsonResult = new JSONObject();
+
+        try {
+            String shortName = params.get("forum")[0];
+            JSONObject response = new JSONObject();
+            forumDetails(shortName, response);
+
+            if (params.containsKey("related")) {
+                RestApplication.DATABASE.execQuery(String.format("SELECT email FROM forum f JOIN user u on f.uID=u.uID WHERE short_name='%s'", shortName),
+                        result -> {
+                            result.next();
+                            JSONObject user = new JSONObject();
+                            User.userDetails(result.getString("email"), user);
+                            response.put("user", user);
+                        });
+            }
+
+            jsonResult.put("code", 0);
+            jsonResult.put("response", response);
+        } catch (SQLException e) {
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
+        } catch (NullPointerException e) {
+            jsonResult.put("code", 3);
+            jsonResult.put("response", "Invalid request");
+        } catch (RuntimeException e) {
+            jsonResult.put("code", 4);
+            jsonResult.put("response", "Unknown error");
+        }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }

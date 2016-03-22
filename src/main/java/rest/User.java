@@ -1,7 +1,6 @@
 package rest;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
@@ -10,7 +9,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
+import java.text.ParseException;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * Created by vladislav on 18.03.16.
@@ -41,10 +42,10 @@ public class User {
         } catch (SQLException e) {
                 jsonResult.put("code", 5);
                 jsonResult.put("response", "User exists");
-        } catch (JSONException e) {
+        } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-        } catch (RuntimeException e) {
+        } catch (NoSuchElementException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
         }
@@ -72,7 +73,7 @@ public class User {
         } catch (NullPointerException e) {
             jsonResult.put("code", 3);
             jsonResult.put("response", "Invalid request");
-        } catch (JSONException e) {
+        } catch (RuntimeException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
         }
@@ -80,7 +81,7 @@ public class User {
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 
-    private void userDetails(String email, JSONObject response) throws SQLException {
+    public static void userDetails(String email, JSONObject response) throws SQLException {
         RestApplication.DATABASE.execQuery(String.format("SELECT * FROM user where email='%s'", email),
                 result -> {
                     result.next();
@@ -117,7 +118,7 @@ public class User {
                 result -> {
                     JSONArray jsonArray = new JSONArray();
                     while (result.next())
-                        jsonArray.put(result.getString("tID"));
+                        jsonArray.put(result.getInt("tID"));
 
                     response.put("subscriptions", jsonArray);
                 });
@@ -145,7 +146,7 @@ public class User {
         } catch (SQLException e) {
             jsonResult.put("code", 5);
             jsonResult.put("response", "User exists");
-        } catch (JSONException e) {
+        } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
         } catch (RuntimeException e) {
@@ -178,7 +179,7 @@ public class User {
         } catch (SQLException e) {
             jsonResult.put("code", 5);
             jsonResult.put("response", "User exists");
-        } catch (JSONException e) {
+        } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
         } catch (RuntimeException e) {
@@ -224,7 +225,7 @@ public class User {
         } catch (NullPointerException e) {
             jsonResult.put("code", 3);
             jsonResult.put("response", "Invalid request");
-        } catch (JSONException e) {
+        } catch (RuntimeException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
         }
@@ -267,7 +268,7 @@ public class User {
         } catch (NullPointerException e) {
             jsonResult.put("code", 3);
             jsonResult.put("response", "Invalid request");
-        } catch (JSONException e) {
+        } catch (RuntimeException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
         }
@@ -281,6 +282,39 @@ public class User {
     public Response listPosts(@Context HttpServletRequest request) {
         Map<String, String[]> params = request.getParameterMap();
         JSONObject jsonResult = new JSONObject();
+
+        try {
+            String email = params.get("user")[0];
+            String query = String.format("SELECT u2.email FROM ((user u1 join user_user uu on u1.uID=uu.follower) join user u2 on uu.followee=u2.uID) WHERE u1.email='%s'%s ORDER BY u2.name DESC", email,
+                    (params.containsKey("since_id") ? String.format(" AND u2.uID >= %s", params.get("since_id")[0]) : ""));
+            if (params.containsKey("order"))
+                query = query.replace("DESC", params.get("order")[0]);
+            if (params.containsKey("limit"))
+                query += " LIMIT " + params.get("limit")[0];
+
+            RestApplication.DATABASE.execQuery(query,
+                    result -> {
+                        JSONArray jsonArray = new JSONArray();
+
+                        while (result.next()) {
+                            JSONObject user = new JSONObject();
+                            userDetails(result.getString("email"), user);
+                            jsonArray.put(user);
+                        }
+
+                        jsonResult.put("code", 0);
+                        jsonResult.put("response", jsonArray);
+                    });
+        } catch (SQLException e) {
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
+        } catch (NullPointerException e) {
+            jsonResult.put("code", 3);
+            jsonResult.put("response", "Invalid request");
+        } catch (RuntimeException e) {
+            jsonResult.put("code", 4);
+            jsonResult.put("response", "Unknown error");
+        }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
@@ -305,10 +339,10 @@ public class User {
         } catch (SQLException e) {
             jsonResult.put("code", 5);
             jsonResult.put("response", "User exists");
-        } catch (JSONException e) {
+        } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-        } catch (RuntimeException e) {
+        } catch (NoSuchElementException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
         }

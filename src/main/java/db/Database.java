@@ -19,6 +19,11 @@ public class Database {
         dataSource.setUrl("jdbc:mysql://localhost:3306/db_techopark");
         dataSource.setUsername("www-data");
         dataSource.setPassword("technopark");
+
+        try {
+            execUpdate("SET NAMES utf8 COLLATE utf8_unicode_ci");
+        } catch (SQLException e) {}
+
     }
 
     @Override
