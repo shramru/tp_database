@@ -96,22 +96,14 @@ public class Thread {
             if (params.containsKey("related")) {
                 String[] related = params.get("related");
                 if (Arrays.asList(related).contains("user")) {
-                    RestApplication.DATABASE.execQuery(String.format("SELECT email FROM thread t JOIN user u on t.uID=u.uID WHERE tID=%s", id),
-                            result -> {
-                                result.next();
-                                JSONObject user = new JSONObject();
-                                User.userDetails(result.getString("email"), user);
-                                response.put("user", user);
-                            });
+                    JSONObject user = new JSONObject();
+                    User.userDetails(response.getString("user"), user);
+                    response.put("user", user);
                 }
                 if (Arrays.asList(related).contains("forum")) {
-                    RestApplication.DATABASE.execQuery(String.format("SELECT short_name FROM thread t JOIN forum f on t.fID=f.fID WHERE tID=%s", id),
-                            result -> {
-                                result.next();
-                                JSONObject forum = new JSONObject();
-                                Forum.forumDetails(result.getString("short_name"), forum);
-                                response.put("forum", forum);
-                            });
+                    JSONObject forum = new JSONObject();
+                    Forum.forumDetails(response.getString("forum"), forum);
+                    response.put("forum", forum);
                 }
             }
 
@@ -123,7 +115,7 @@ public class Thread {
         } catch (NullPointerException e) {
             jsonResult.put("code", 3);
             jsonResult.put("response", "Invalid request");
-        } catch (RuntimeException e) {
+        } catch (NoSuchElementException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
         }
@@ -134,6 +126,7 @@ public class Thread {
     @GET
     @Path("list")
     @Produces(MediaType.APPLICATION_JSON)
+    @SuppressWarnings("all")
     public Response list(@Context HttpServletRequest request) {
         Map<String, String[]> params = request.getParameterMap();
         JSONObject jsonResult = new JSONObject();
@@ -161,7 +154,7 @@ public class Thread {
 
                         while (result.next()) {
                             JSONObject post = new JSONObject();
-                            threadDetails(result.getString("pID"), post);
+                            threadDetails(result.getString("tID"), post);
                             jsonArray.put(post);
                         }
 
@@ -316,7 +309,7 @@ public class Thread {
         try {
             JSONObject jsonObject = new JSONObject(input);
 
-            RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user_thread VALUES ((SELECT uID FROM user WHERE email='%s'), %s)", jsonObject.getString("user"), jsonObject.getString("thread")));
+            RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user_thread VALUES ('%s', %s)", jsonObject.getString("user"), jsonObject.getString("thread")));
 
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
@@ -344,7 +337,7 @@ public class Thread {
         try {
             JSONObject jsonObject = new JSONObject(input);
 
-            RestApplication.DATABASE.execUpdate(String.format("DELETE FROM user_thread WHERE uID=(SELECT uID FROM user WHERE email='%s') AND tID=%s", jsonObject.getString("user"), jsonObject.getString("thread")));
+            RestApplication.DATABASE.execUpdate(String.format("DELETE FROM user_thread WHERE uID='%s' AND tID=%s", jsonObject.getString("user"), jsonObject.getString("thread")));
 
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);

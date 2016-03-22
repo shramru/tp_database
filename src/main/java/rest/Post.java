@@ -44,8 +44,10 @@ public class Post {
 
             int pID = RestApplication.DATABASE.execUpdate(
                     String.format("INSERT INTO post (date, tID, message, user, forum, parent, isApproved, isHighlighted, isEdited, isSpam, isDeleted) VALUES (%s)", values));
-            jsonObject.put("id", pID);
+            if (!jsonObject.getBoolean("isDeleted"))
+                RestApplication.DATABASE.execUpdate(String.format("UPDATE thread SET posts=posts+1 WHERE tID=%s", jsonObject.getString("thread")));
 
+            jsonObject.put("id", pID);
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
         } catch (SQLException e) {
@@ -101,22 +103,14 @@ public class Post {
             if (params.containsKey("related")) {
                 String[] related = params.get("related");
                 if (Arrays.asList(related).contains("user")) {
-                    RestApplication.DATABASE.execQuery(String.format("SELECT email FROM post p JOIN user u on p.uID=u.uID WHERE pID=%s", id),
-                            result -> {
-                                result.next();
-                                JSONObject user = new JSONObject();
-                                User.userDetails(result.getString("email"), user);
-                                response.put("user", user);
-                            });
+                    JSONObject user = new JSONObject();
+                    User.userDetails(response.getString("user"), user);
+                    response.put("user", user);
                 }
                 if (Arrays.asList(related).contains("forum")) {
-                    RestApplication.DATABASE.execQuery(String.format("SELECT short_name FROM post p JOIN forum f on p.fID=f.fID WHERE pID=%s", id),
-                            result -> {
-                                result.next();
-                                JSONObject forum = new JSONObject();
-                                Forum.forumDetails(result.getString("short_name"), forum);
-                                response.put("forum", forum);
-                            });
+                    JSONObject forum = new JSONObject();
+                    Forum.forumDetails(response.getString("forum"), forum);
+                    response.put("forum", forum);
                 }
                 if (Arrays.asList(related).contains("thread")) {
                     JSONObject thread = new JSONObject();
@@ -144,6 +138,7 @@ public class Post {
     @GET
     @Path("list")
     @Produces(MediaType.APPLICATION_JSON)
+    @SuppressWarnings("all")
     public Response list(@Context HttpServletRequest request) {
         Map<String, String[]> params = request.getParameterMap();
         JSONObject jsonResult = new JSONObject();

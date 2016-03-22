@@ -93,28 +93,25 @@ public class User {
                     response.put("username", result.getString("username") == null ? JSONObject.NULL : result.getString("username"));
                 });
         RestApplication.DATABASE.execQuery(
-                String.format("SELECT u2.email FROM ((user u1 join user_user uu on u1.uID=uu.followee) join user u2 on uu.follower=u2.uID) WHERE u1.email='%s'",
-                        email),
+                String.format("SELECT follower FROM user_user WHERE followee='%s'", email),
                 result -> {
                     JSONArray jsonArray = new JSONArray();
                     while (result.next())
-                        jsonArray.put(result.getString("email"));
+                        jsonArray.put(result.getString("follower"));
 
                     response.put("followers", jsonArray);
                 });
         RestApplication.DATABASE.execQuery(
-                String.format("SELECT u2.email FROM ((user u1 join user_user uu on u1.uID=uu.follower) join user u2 on uu.followee=u2.uID) WHERE u1.email='%s'",
-                        email),
+                String.format("SELECT followee FROM user_user WHERE follower='%s'", email),
                 result -> {
                     JSONArray jsonArray = new JSONArray();
                     while (result.next())
-                        jsonArray.put(result.getString("email"));
+                        jsonArray.put(result.getString("followee"));
 
                     response.put("following", jsonArray);
                 });
         RestApplication.DATABASE.execQuery(
-                String.format("SELECT tID FROM user u JOIN user_thread ut ON u.uID=ut.uID WHERE email='%s'",
-                        email),
+                String.format("SELECT tID FROM user_thread WHERE user='%s'", email),
                 result -> {
                     JSONArray jsonArray = new JSONArray();
                     while (result.next())
@@ -136,7 +133,7 @@ public class User {
             String follower = jsonObject.getString("follower");
             String followee = jsonObject.getString("followee");
 
-            RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user_user VALUES ((SELECT uID FROM user WHERE email='%s'), (SELECT uID FROM user WHERE email='%s'))", follower, followee));
+            RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user_user VALUES ('%s', '%s')", follower, followee));
 
             JSONObject response = new JSONObject();
             userDetails(follower, response);
@@ -149,7 +146,7 @@ public class User {
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-        } catch (RuntimeException e) {
+        } catch (NoSuchElementException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
         }
@@ -169,7 +166,7 @@ public class User {
             String follower = jsonObject.getString("follower");
             String followee = jsonObject.getString("followee");
 
-            RestApplication.DATABASE.execUpdate(String.format("DELETE FROM user_user WHERE follower=(SELECT uID FROM user WHERE email='%s') AND followee=(SELECT uID FROM user WHERE email='%s')", follower, followee));
+            RestApplication.DATABASE.execUpdate(String.format("DELETE FROM user_user WHERE follower='%s' AND followee='%s'", follower, followee));
 
             JSONObject response = new JSONObject();
             userDetails(follower, response);
@@ -182,7 +179,7 @@ public class User {
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-        } catch (RuntimeException e) {
+        } catch (NoSuchElementException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
         }
@@ -198,9 +195,9 @@ public class User {
         JSONObject jsonResult = new JSONObject();
 
         try {
-            String email = params.get("user")[0];
-            String query = String.format("SELECT u2.email FROM ((user u1 join user_user uu on u1.uID=uu.followee) join user u2 on uu.follower=u2.uID) WHERE u1.email='%s'%s ORDER BY u2.name DESC", email,
-                    (params.containsKey("since_id") ? String.format(" AND u2.uID >= %s", params.get("since_id")[0]) : ""));
+           String email = params.get("user")[0];
+            String query = String.format("SELECT follower FROM user_user uu JOIN user u ON uu.follower=u.email WHERE followee='%s'%s ORDER BY name DESC", email,
+                    (params.containsKey("since_id") ? String.format(" AND uID >= %s", params.get("since_id")[0]) : ""));
             if (params.containsKey("order"))
                 query = query.replace("DESC", params.get("order")[0]);
             if (params.containsKey("limit"))
@@ -212,7 +209,7 @@ public class User {
 
                         while (result.next()) {
                             JSONObject user = new JSONObject();
-                            userDetails(result.getString("email"), user);
+                            userDetails(result.getString("follower"), user);
                             jsonArray.put(user);
                         }
 
@@ -242,8 +239,8 @@ public class User {
 
         try {
             String email = params.get("user")[0];
-            String query = String.format("SELECT u2.email FROM ((user u1 join user_user uu on u1.uID=uu.follower) join user u2 on uu.followee=u2.uID) WHERE u1.email='%s'%s ORDER BY u2.name DESC", email,
-                    (params.containsKey("since_id") ? String.format(" AND u2.uID >= %s", params.get("since_id")[0]) : ""));
+            String query = String.format("SELECT followee FROM user_user uu JOIN user u ON uu.followee=u.email WHERE follower='%s'%s ORDER BY name DESC", email,
+                    (params.containsKey("since_id") ? String.format(" AND uID >= %s", params.get("since_id")[0]) : ""));
             if (params.containsKey("order"))
                 query = query.replace("DESC", params.get("order")[0]);
             if (params.containsKey("limit"))
@@ -255,7 +252,7 @@ public class User {
 
                         while (result.next()) {
                             JSONObject user = new JSONObject();
-                            userDetails(result.getString("email"), user);
+                            userDetails(result.getString("followee"), user);
                             jsonArray.put(user);
                         }
 
@@ -285,8 +282,8 @@ public class User {
 
         try {
             String email = params.get("user")[0];
-            String query = String.format("SELECT pID FROM user u JOIN post p ON u.uID=p.uID WHERE u.email='%s'%s ORDER BY p.date DESC", email,
-                    (params.containsKey("since") ? String.format(" AND p.date >= '%s'", params.get("since")[0]) : ""));
+            String query = String.format("SELECT pID FROM post WHERE user='%s'%s ORDER BY date DESC", email,
+                    (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
             if (params.containsKey("order"))
                 query = query.replace("DESC", params.get("order")[0]);
             if (params.containsKey("limit"))

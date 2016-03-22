@@ -1,7 +1,5 @@
 package rest;
 
-//import org.json.JSONException;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
@@ -79,13 +77,9 @@ public class Forum {
             forumDetails(shortName, response);
 
             if (params.containsKey("related")) {
-                RestApplication.DATABASE.execQuery(String.format("SELECT email FROM forum f JOIN user u on f.uID=u.uID WHERE short_name='%s'", shortName),
-                        result -> {
-                            result.next();
-                            JSONObject user = new JSONObject();
-                            User.userDetails(result.getString("email"), user);
-                            response.put("user", user);
-                        });
+                JSONObject user = new JSONObject();
+                User.userDetails(response.getString("user"), user);
+                response.put("user", user);
             }
 
             jsonResult.put("code", 0);
@@ -96,7 +90,7 @@ public class Forum {
         } catch (NullPointerException e) {
             jsonResult.put("code", 3);
             jsonResult.put("response", "Invalid request");
-        } catch (RuntimeException e) {
+        } catch (NoSuchElementException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
         }
