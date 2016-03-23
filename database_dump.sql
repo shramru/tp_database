@@ -54,13 +54,13 @@ CREATE TABLE `post` (
   `message` text CHARACTER SET utf8 NOT NULL,
   `user` varchar(255) CHARACTER SET utf8 NOT NULL,
   `forum` varchar(255) CHARACTER SET utf8 NOT NULL,
+  `tID` int(11) DEFAULT NULL,
   `likes` int(11) unsigned NOT NULL DEFAULT '0',
   `dislikes` int(11) unsigned NOT NULL DEFAULT '0',
   `points` int(11) NOT NULL DEFAULT '0',
-  `path` text COLLATE utf8_unicode_ci,
-  `tID` int(11) DEFAULT NULL,
+  `mpath` mediumtext CHARACTER SET utf8,
   PRIMARY KEY (`pID`)
-) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -205,4 +205,4 @@ ALTER DATABASE `db_techopark` CHARACTER SET utf8 COLLATE utf8_unicode_ci ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-03-23  1:45:12
+-- Dump completed on 2016-03-23 19:48:25
