@@ -105,6 +105,8 @@ public class Thread {
                     Forum.forumDetails(response.getString("forum"), forum);
                     response.put("forum", forum);
                 }
+                if (Arrays.asList(related).contains("thread"))
+                    throw new NullPointerException();
             }
 
             jsonResult.put("code", 0);
@@ -337,7 +339,7 @@ public class Thread {
         try {
             JSONObject jsonObject = new JSONObject(input);
 
-            RestApplication.DATABASE.execUpdate(String.format("DELETE FROM user_thread WHERE uID='%s' AND tID=%s", jsonObject.getString("user"), jsonObject.getString("thread")));
+            RestApplication.DATABASE.execUpdate(String.format("DELETE FROM user_thread WHERE user='%s' AND tID=%s", jsonObject.getString("user"), jsonObject.getString("thread")));
 
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
@@ -378,7 +380,7 @@ public class Thread {
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-        } catch (RuntimeException e) {
+        } catch (NoSuchElementException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
         }

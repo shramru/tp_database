@@ -1,5 +1,6 @@
 package rest;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
@@ -9,6 +10,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -101,9 +103,63 @@ public class Forum {
     @GET
     @Path("listPosts")
     @Produces(MediaType.APPLICATION_JSON)
+    @SuppressWarnings("all")
     public Response listPosts(@Context HttpServletRequest request) {
         Map<String, String[]> params = request.getParameterMap();
         JSONObject jsonResult = new JSONObject();
+
+        try {
+            String shortName = params.get("forum")[0];
+            String query = String.format("SELECT pID FROM post WHERE forum='%s'%s ORDER BY date DESC", shortName,
+                    (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
+            if (params.containsKey("order"))
+                query = query.replace("DESC", params.get("order")[0]);
+            if (params.containsKey("limit"))
+                query += " LIMIT " + params.get("limit")[0];
+
+            RestApplication.DATABASE.execQuery(query,
+                    result -> {
+                        JSONArray jsonArray = new JSONArray();
+
+                        while (result.next()) {
+                            JSONObject post = new JSONObject();
+                            Post.postDetails(result.getString("pID"), post);
+
+                            if (params.containsKey("related")) {
+                                String[] param = params.get("related");
+                                if(Arrays.asList(param).contains("thread")) {
+                                    JSONObject thread = new JSONObject();
+                                    Thread.threadDetails(post.getString("thread"), thread);
+                                    post.put("thread", thread);
+                                }
+                                if(Arrays.asList(param).contains("forum")) {
+                                    JSONObject forum = new JSONObject();
+                                    Forum.forumDetails(post.getString("forum"), forum);
+                                    post.put("forum", forum);
+                                }
+                                if(Arrays.asList(param).contains("user")) {
+                                    JSONObject user = new JSONObject();
+                                    User.userDetails(post.getString("user"), user);
+                                    post.put("user", user);
+                                }
+                            }
+
+                            jsonArray.put(post);
+                        }
+
+                        jsonResult.put("code", 0);
+                        jsonResult.put("response", jsonArray);
+                    });
+        } catch (SQLException e) {
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
+        } catch (NullPointerException e) {
+            jsonResult.put("code", 3);
+            jsonResult.put("response", "Invalid request");
+        } catch (RuntimeException e) {
+            jsonResult.put("code", 4);
+            jsonResult.put("response", "Unknown error");
+        }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
@@ -111,9 +167,58 @@ public class Forum {
     @GET
     @Path("listThreads")
     @Produces(MediaType.APPLICATION_JSON)
+    @SuppressWarnings("all")
     public Response listThreads(@Context HttpServletRequest request) {
         Map<String, String[]> params = request.getParameterMap();
         JSONObject jsonResult = new JSONObject();
+
+        try {
+            String shortName = params.get("forum")[0];
+            String query = String.format("SELECT tID FROM thread WHERE forum='%s'%s ORDER BY date DESC", shortName,
+                    (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
+            if (params.containsKey("order"))
+                query = query.replace("DESC", params.get("order")[0]);
+            if (params.containsKey("limit"))
+                query += " LIMIT " + params.get("limit")[0];
+
+            RestApplication.DATABASE.execQuery(query,
+                    result -> {
+                        JSONArray jsonArray = new JSONArray();
+
+                        while (result.next()) {
+                            JSONObject thread = new JSONObject();
+                            Thread.threadDetails(result.getString("tID"), thread);
+
+                            if (params.containsKey("related")) {
+                                String[] param = params.get("related");
+                                if(Arrays.asList(param).contains("forum")) {
+                                    JSONObject forum = new JSONObject();
+                                    Forum.forumDetails(thread.getString("forum"), forum);
+                                    thread.put("forum", forum);
+                                }
+                                if(Arrays.asList(param).contains("user")) {
+                                    JSONObject user = new JSONObject();
+                                    User.userDetails(thread.getString("user"), user);
+                                    thread.put("user", user);
+                                }
+                            }
+
+                            jsonArray.put(thread);
+                        }
+
+                        jsonResult.put("code", 0);
+                        jsonResult.put("response", jsonArray);
+                    });
+        } catch (SQLException e) {
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
+        } catch (NullPointerException e) {
+            jsonResult.put("code", 3);
+            jsonResult.put("response", "Invalid request");
+        } catch (RuntimeException e) {
+            jsonResult.put("code", 4);
+            jsonResult.put("response", "Unknown error");
+        }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
@@ -124,6 +229,39 @@ public class Forum {
     public Response listUsers(@Context HttpServletRequest request) {
         Map<String, String[]> params = request.getParameterMap();
         JSONObject jsonResult = new JSONObject();
+
+        try {
+            String shortName = params.get("forum")[0];
+            String query = String.format("SELECT DISTINCT email FROM post p JOIN user u ON p.user=u.email WHERE forum='%s'%s ORDER BY name DESC", shortName,
+                    (params.containsKey("since_id") ? String.format(" AND uID >= %s", params.get("since_id")[0]) : ""));
+            if (params.containsKey("order"))
+                query = query.replace("DESC", params.get("order")[0]);
+            if (params.containsKey("limit"))
+                query += " LIMIT " + params.get("limit")[0];
+
+            RestApplication.DATABASE.execQuery(query,
+                    result -> {
+                        JSONArray jsonArray = new JSONArray();
+
+                        while (result.next()) {
+                            JSONObject user = new JSONObject();
+                            User.userDetails(result.getString("email"), user);
+                            jsonArray.put(user);
+                        }
+
+                        jsonResult.put("code", 0);
+                        jsonResult.put("response", jsonArray);
+                    });
+        } catch (SQLException e) {
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
+        } catch (NullPointerException e) {
+            jsonResult.put("code", 3);
+            jsonResult.put("response", "Invalid request");
+        } catch (RuntimeException e) {
+            jsonResult.put("code", 4);
+            jsonResult.put("response", "Unknown error");
+        }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
