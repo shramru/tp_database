@@ -180,9 +180,67 @@ public class Thread {
     @GET
     @Path("listPosts")
     @Produces(MediaType.APPLICATION_JSON)
+    @SuppressWarnings("all")
     public Response listPosts(@Context HttpServletRequest request) {
         Map<String, String[]> params = request.getParameterMap();
         JSONObject jsonResult = new JSONObject();
+
+        try {
+            String tID = params.get("thread")[0];
+            String order = "ORDER BY date DESC";
+            String sort = "";
+            if (params.containsKey("sort")) {
+                sort = params.get("sort")[0];
+                if (sort.equals("tree")) {
+                    order = "ORDER BY SUBSTRING(mpath,1,4) DESC, mpath ASC";
+                } else if (sort.equals("parent_tree")) {
+                    order = "ORDER BY SUBSTRING(mpath,1,4) DESC, mpath ASC";
+                }
+            }
+
+            String query = String.format("SELECT pID, mpath FROM post WHERE tID=%s%s %s", tID,
+                    (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""), order) ;
+            if (params.containsKey("order"))
+                query = query.replace("DESC", params.get("order")[0]);
+            if (params.containsKey("limit") && !sort.equals("parent_tree"))
+                query += " LIMIT " + params.get("limit")[0];
+
+
+
+            RestApplication.DATABASE.execQuery(query,
+                    result -> {
+                        JSONArray jsonArray = new JSONArray();
+                        char minPath = 0;
+                        int counter = 0;
+                        result.next();
+                        minPath = result.getString("mpath").charAt(3);
+                        do {
+                            char newChar = result.getString("mpath").charAt(3);
+                            if (minPath != newChar) {
+                                minPath=newChar;
+                                ++counter;
+                            }
+                            if (params.containsKey("sort") && params.get("sort")[0].equals("parent_tree") && params.containsKey("limit") && counter == Integer.valueOf(params.get("limit")[0]))
+                                break;
+
+                            JSONObject post = new JSONObject();
+                            Post.postDetails(result.getString("pID"), post);
+                            jsonArray.put(post);
+                        } while (result.next());
+
+                        jsonResult.put("code", 0);
+                        jsonResult.put("response", jsonArray);
+                    });
+        } catch (SQLException e) {
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
+        } catch (NullPointerException e) {
+            jsonResult.put("code", 3);
+            jsonResult.put("response", "Invalid request");
+        } catch (RuntimeException e) {
+            jsonResult.put("code", 4);
+            jsonResult.put("response", "Unknown error");
+        }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }

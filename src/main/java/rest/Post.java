@@ -47,6 +47,41 @@ public class Post {
             if (!jsonObject.getBoolean("isDeleted"))
                 RestApplication.DATABASE.execUpdate(String.format("UPDATE thread SET posts=posts+1 WHERE tID=%s", jsonObject.getString("thread")));
 
+            if (!jsonObject.get("parent").equals(JSONObject.NULL)) {
+
+                RestApplication.DATABASE.execQuery(String.format("SELECT mpath FROM post WHERE pID=%s", jsonObject.getString("parent")),
+                        result -> {
+                            result.next();
+                            String parentMpath = result.getString("mpath");
+                            RestApplication.DATABASE.execQuery(String.format("SELECT SUBSTRING_INDEX(mpath, '.', -1) as r FROM post WHERE LENGTH(mpath)=%d AND mpath LIKE '%s.%%' ORDER BY r DESC LIMIT 1", parentMpath.length()+5, parentMpath),
+                                    result1 -> {
+                                        int id = 1;
+                                        String mpath;
+                                        if (result1.next()) {
+                                            String lastmpath = result1.getString("r");
+                                            id = Integer.valueOf(lastmpath) + 1;
+                                        }
+                                        mpath = parentMpath + '.' + String.format("%04d", id);
+                                        RestApplication.DATABASE.execUpdate(String.format("UPDATE post SET mpath='%s' WHERE pID=%d", mpath, pID));
+                                    });
+                        });
+            } else {
+                RestApplication.DATABASE.execQuery("SELECT SUBSTRING_INDEX(mpath, '.', 1) as r FROM post ORDER BY r DESC LIMIT 1",
+                        result -> {
+                            if (result.next()) {
+                                int id = 1;
+                                String lastmpath = result.getString("r");
+                                String mpath;
+                                if (lastmpath != null)
+                                    id = Integer.valueOf(lastmpath) + 1;
+
+                                mpath = String.format("%04d", id);
+                                RestApplication.DATABASE.execUpdate(String.format("UPDATE post SET mpath='%s' WHERE pID=%d", mpath, pID));
+
+                            }
+                        });
+            }
+
             jsonObject.put("id", pID);
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
