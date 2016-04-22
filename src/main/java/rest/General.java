@@ -22,7 +22,7 @@ public class General {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response create(final String input, @Context HttpServletRequest request) {
-        JSONObject jsonResult = new JSONObject();
+        final JSONObject jsonResult = new JSONObject();
 
         try {
             RestApplication.DATABASE.execUpdate("CALL clear");
@@ -41,12 +41,12 @@ public class General {
     @Path("status")
     @Produces(MediaType.APPLICATION_JSON)
     public Response details(@Context HttpServletRequest request) {
-        JSONObject jsonResult = new JSONObject();
+        final JSONObject jsonResult = new JSONObject();
 
         try {
             RestApplication.DATABASE.execQuery("CALL status",
                     result -> {
-                        JSONObject response = new JSONObject();
+                        final JSONObject response = new JSONObject();
 
                         result.next();
                         response.put("user", result.getInt("user"));

@@ -11,7 +11,7 @@ import java.sql.Statement;
  */
 public class Database {
 
-    BasicDataSource dataSource;
+    final BasicDataSource dataSource;
 
     public Database() {
         dataSource = new BasicDataSource();
@@ -22,7 +22,7 @@ public class Database {
 
         try {
             execUpdate("SET NAMES utf8 COLLATE utf8_unicode_ci");
-        } catch (SQLException e) {}
+        } catch (SQLException ignored) {}
 
     }
 
@@ -37,7 +37,7 @@ public class Database {
         try (Connection connection = dataSource.getConnection()) {
             try (Statement stmt = connection.createStatement()) {
                 stmt.execute(query);
-                ResultSet result = stmt.getResultSet();
+                final ResultSet result = stmt.getResultSet();
                 handler.handle(result);
                 result.close();
             }

@@ -1,12 +1,9 @@
 package main;
 
-import db.Database;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.servlet.ServletContainer;
-
-import javax.xml.crypto.Data;
 
 /**
  * Created by vladislav on 18.03.16.

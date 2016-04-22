@@ -25,16 +25,16 @@ public class User {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response create(final String input, @Context HttpServletRequest request) {
-        JSONObject jsonResult = new JSONObject();
+        final JSONObject jsonResult = new JSONObject();
 
         try {
-            JSONObject jsonObject = new JSONObject(input);
+            final JSONObject jsonObject = new JSONObject(input);
 
-            String values = String.format("'%s', '%s', '%s', '%s', '%s'",
+            final String values = String.format("'%s', '%s', '%s', '%s', '%s'",
                     jsonObject.get("username"), jsonObject.get("about"), jsonObject.get("name"), jsonObject.get("email"),
                     jsonObject.has("isAnonymous") ? (jsonObject.getBoolean("isAnonymous") ? '1' : '0') : '0').replaceAll("'null'", "null");
 
-            int uID = RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user (username, about, name, email, isAnonymous) VALUES (%s)", values));
+            final int uID = RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user (username, about, name, email, isAnonymous) VALUES (%s)", values));
             jsonObject.put("id", uID);
 
             jsonResult.put("code", 0);
@@ -57,12 +57,12 @@ public class User {
     @Path("details")
     @Produces(MediaType.APPLICATION_JSON)
     public Response details(@Context HttpServletRequest request) throws SQLException {
-        Map<String, String[]> params = request.getParameterMap();
-        JSONObject jsonResult = new JSONObject();
+        final Map<String, String[]> params = request.getParameterMap();
+        final JSONObject jsonResult = new JSONObject();
 
         try {
-            String email = params.get("user")[0];
-            JSONObject response = new JSONObject();
+            final String email = params.get("user")[0];
+            final JSONObject response = new JSONObject();
             userDetails(email, response);
 
             jsonResult.put("code", 0);
@@ -95,7 +95,7 @@ public class User {
         RestApplication.DATABASE.execQuery(
                 String.format("SELECT follower FROM user_user WHERE followee='%s'", email),
                 result -> {
-                    JSONArray jsonArray = new JSONArray();
+                    final JSONArray jsonArray = new JSONArray();
                     while (result.next())
                         jsonArray.put(result.getString("follower"));
 
@@ -104,7 +104,7 @@ public class User {
         RestApplication.DATABASE.execQuery(
                 String.format("SELECT followee FROM user_user WHERE follower='%s'", email),
                 result -> {
-                    JSONArray jsonArray = new JSONArray();
+                    final JSONArray jsonArray = new JSONArray();
                     while (result.next())
                         jsonArray.put(result.getString("followee"));
 
@@ -113,7 +113,7 @@ public class User {
         RestApplication.DATABASE.execQuery(
                 String.format("SELECT tID FROM user_thread WHERE user='%s'", email),
                 result -> {
-                    JSONArray jsonArray = new JSONArray();
+                    final JSONArray jsonArray = new JSONArray();
                     while (result.next())
                         jsonArray.put(result.getInt("tID"));
 
@@ -126,16 +126,16 @@ public class User {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response follow(final String input, @Context HttpServletRequest request) {
-        JSONObject jsonResult = new JSONObject();
+        final JSONObject jsonResult = new JSONObject();
 
         try {
-            JSONObject jsonObject = new JSONObject(input);
-            String follower = jsonObject.getString("follower");
-            String followee = jsonObject.getString("followee");
+            final JSONObject jsonObject = new JSONObject(input);
+            final String follower = jsonObject.getString("follower");
+            final String followee = jsonObject.getString("followee");
 
-            RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user_user VALUES ('%s', '%s')", follower, followee));
+            RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user_user (follower, followee) VALUES ('%s', '%s')", follower, followee));
 
-            JSONObject response = new JSONObject();
+            final JSONObject response = new JSONObject();
             userDetails(follower, response);
 
             jsonResult.put("code", 0);
@@ -159,16 +159,16 @@ public class User {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response unfollow(final String input, @Context HttpServletRequest request) {
-        JSONObject jsonResult = new JSONObject();
+        final JSONObject jsonResult = new JSONObject();
 
         try {
-            JSONObject jsonObject = new JSONObject(input);
-            String follower = jsonObject.getString("follower");
-            String followee = jsonObject.getString("followee");
+            final JSONObject jsonObject = new JSONObject(input);
+            final String follower = jsonObject.getString("follower");
+            final String followee = jsonObject.getString("followee");
 
             RestApplication.DATABASE.execUpdate(String.format("DELETE FROM user_user WHERE follower='%s' AND followee='%s'", follower, followee));
 
-            JSONObject response = new JSONObject();
+            final JSONObject response = new JSONObject();
             userDetails(follower, response);
 
             jsonResult.put("code", 0);
@@ -191,11 +191,11 @@ public class User {
     @Path("listFollowers")
     @Produces(MediaType.APPLICATION_JSON)
     public Response listFollowers(@Context HttpServletRequest request) {
-        Map<String, String[]> params = request.getParameterMap();
-        JSONObject jsonResult = new JSONObject();
+        final Map<String, String[]> params = request.getParameterMap();
+        final JSONObject jsonResult = new JSONObject();
 
         try {
-           String email = params.get("user")[0];
+           final String email = params.get("user")[0];
             String query = String.format("SELECT follower FROM user_user uu JOIN user u ON uu.follower=u.email WHERE followee='%s'%s ORDER BY name DESC", email,
                     (params.containsKey("since_id") ? String.format(" AND uID >= %s", params.get("since_id")[0]) : ""));
             if (params.containsKey("order"))
@@ -205,10 +205,10 @@ public class User {
 
             RestApplication.DATABASE.execQuery(query,
                     result -> {
-                        JSONArray jsonArray = new JSONArray();
+                        final JSONArray jsonArray = new JSONArray();
 
                         while (result.next()) {
-                            JSONObject user = new JSONObject();
+                            final JSONObject user = new JSONObject();
                             userDetails(result.getString("follower"), user);
                             jsonArray.put(user);
                         }
@@ -234,11 +234,11 @@ public class User {
     @Path("listFollowing")
     @Produces(MediaType.APPLICATION_JSON)
     public Response listFollowing(@Context HttpServletRequest request) {
-        Map<String, String[]> params = request.getParameterMap();
-        JSONObject jsonResult = new JSONObject();
+        final Map<String, String[]> params = request.getParameterMap();
+        final JSONObject jsonResult = new JSONObject();
 
         try {
-            String email = params.get("user")[0];
+            final String email = params.get("user")[0];
             String query = String.format("SELECT followee FROM user_user uu JOIN user u ON uu.followee=u.email WHERE follower='%s'%s ORDER BY name DESC", email,
                     (params.containsKey("since_id") ? String.format(" AND uID >= %s", params.get("since_id")[0]) : ""));
             if (params.containsKey("order"))
@@ -248,10 +248,10 @@ public class User {
 
             RestApplication.DATABASE.execQuery(query,
                     result -> {
-                        JSONArray jsonArray = new JSONArray();
+                        final JSONArray jsonArray = new JSONArray();
 
                         while (result.next()) {
-                            JSONObject user = new JSONObject();
+                            final JSONObject user = new JSONObject();
                             userDetails(result.getString("followee"), user);
                             jsonArray.put(user);
                         }
@@ -277,11 +277,11 @@ public class User {
     @Path("listPosts")
     @Produces(MediaType.APPLICATION_JSON)
     public Response listPosts(@Context HttpServletRequest request) {
-        Map<String, String[]> params = request.getParameterMap();
-        JSONObject jsonResult = new JSONObject();
+        final Map<String, String[]> params = request.getParameterMap();
+        final JSONObject jsonResult = new JSONObject();
 
         try {
-            String email = params.get("user")[0];
+            final String email = params.get("user")[0];
             String query = String.format("SELECT pID FROM post WHERE user='%s'%s ORDER BY date DESC", email,
                     (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
             if (params.containsKey("order"))
@@ -291,10 +291,10 @@ public class User {
 
             RestApplication.DATABASE.execQuery(query,
                     result -> {
-                        JSONArray jsonArray = new JSONArray();
+                        final JSONArray jsonArray = new JSONArray();
 
                         while (result.next()) {
-                            JSONObject post = new JSONObject();
+                            final JSONObject post = new JSONObject();
                             Post.postDetails(result.getString("pID"), post);
                             jsonArray.put(post);
                         }
@@ -321,15 +321,15 @@ public class User {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateProfile(final String input, @Context HttpServletRequest request) {
-        JSONObject jsonResult = new JSONObject();
+        final JSONObject jsonResult = new JSONObject();
 
         try {
-            JSONObject jsonObject = new JSONObject(input);
-            String email = jsonObject.getString("user");
+            final JSONObject jsonObject = new JSONObject(input);
+            final String email = jsonObject.getString("user");
 
             RestApplication.DATABASE.execUpdate(String.format("UPDATE user SET about='%s', name='%s' WHERE email='%s'", jsonObject.get("about"), jsonObject.get("name"), email).replaceAll("'null'", "null"));
 
-            JSONObject response = new JSONObject();
+            final JSONObject response = new JSONObject();
             userDetails(email, response);
             jsonResult.put("code", 0);
             jsonResult.put("response", response);
