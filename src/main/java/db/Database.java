@@ -37,9 +37,20 @@ public class Database {
         try (Connection connection = dataSource.getConnection()) {
             try (Statement stmt = connection.createStatement()) {
                 stmt.execute(query);
-                final ResultSet result = stmt.getResultSet();
-                handler.handle(result);
-                result.close();
+                try (ResultSet result = stmt.getResultSet()) {
+                    handler.handle(result);
+                }
+            }
+        }
+    }
+
+    public <T> T execQuery(String query, TResultHandler<T> handler) throws SQLException {
+        try (Connection connection = dataSource.getConnection()) {
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute(query);
+                try (ResultSet result = stmt.getResultSet()) {
+                    return handler.handle(result);
+                }
             }
         }
     }
@@ -50,15 +61,15 @@ public class Database {
                 stmt.executeUpdate(update, Statement.RETURN_GENERATED_KEYS);
                 int res = -1;
 
-                try (ResultSet rs = stmt.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        res = rs.getInt(1);
-                    }
+                try (ResultSet result = stmt.getGeneratedKeys()) {
+                    if (result.next()) { res = result.getInt(1); }
                 }
-
                 return res;
             }
         }
     }
 
+    public Connection getConnection() throws SQLException {
+        return dataSource.getConnection();
+    }
 }

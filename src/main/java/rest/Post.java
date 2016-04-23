@@ -9,6 +9,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.security.interfaces.RSAKey;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -36,14 +37,20 @@ public class Post {
         try {
             final JSONObject jsonObject = new JSONObject(input);
 
+            final String parent = jsonObject.getString("parent");
+            final String thread = jsonObject.getString("thread");
+
             final String values = String.format("'%s', %s, '%s', '%s', '%s', %s, %s, %s, %s, %s, %s",
-                    jsonObject.getString("date"), jsonObject.getString("thread"), jsonObject.getString("message"), jsonObject.getString("user"), jsonObject.getString("forum"), jsonObject.getString("parent"),
+                    jsonObject.getString("date"), thread, jsonObject.getString("message"), jsonObject.getString("user"), jsonObject.getString("forum"), parent,
                     jsonObject.has("isApproved") ? (jsonObject.getBoolean("isApproved") ? '1' : '0') : '0',  jsonObject.has("isHighlighted") ? (jsonObject.getBoolean("isHighlighted") ? '1' : '0') : '0',
             jsonObject.has("isEdited") ? (jsonObject.getBoolean("isEdited") ? '1' : '0') : '0',  jsonObject.has("isSpam") ? (jsonObject.getBoolean("isSpam") ? '1' : '0') : '0',
             jsonObject.has("isDeleted") ? (jsonObject.getBoolean("isDeleted") ? '1' : '0') : '0');
 
-            final int pID = RestApplication.DATABASE.execUpdate(
-                    String.format("INSERT INTO post (date, tID, message, user, forum, parent, isApproved, isHighlighted, isEdited, isSpam, isDeleted) VALUES (%s)", values));
+            final int pID = RestApplication.DATABASE.execQuery(String.format("CALL insert_post(%s)", values),
+                    result -> {
+                        result.next();
+                        return result.getInt("ID");
+                    });
 
             jsonObject.put("id", pID);
             jsonResult.put("code", 0);
