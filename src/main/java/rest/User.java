@@ -40,14 +40,17 @@ public class User {
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
         } catch (SQLException e) {
-                jsonResult.put("code", 5);
-                jsonResult.put("response", "User exists");
+            jsonResult.put("code", 5);
+            jsonResult.put("response", "User exists");
+            System.out.println(e.getMessage());
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
+            System.out.println(e.getMessage());
         } catch (NoSuchElementException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
+            System.out.println(e.getMessage());
         }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
