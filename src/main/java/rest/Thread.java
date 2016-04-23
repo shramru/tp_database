@@ -55,7 +55,7 @@ public class Thread {
             jsonResult.put("response", "Invalid request");
             System.out.println("Thread error:");
             System.out.println(e.getMessage());
-        } catch (NoSuchElementException e) {
+        } catch (NoSuchElementException | ClassCastException | NullPointerException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
             System.out.println("Thread error:");

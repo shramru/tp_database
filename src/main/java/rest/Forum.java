@@ -50,7 +50,7 @@ public class Forum {
             jsonResult.put("response", "Invalid request");
             System.out.println("Forum error:");
             System.out.println(e.getMessage());
-        } catch (NoSuchElementException e) {
+        } catch (NoSuchElementException | NullPointerException | ClassCastException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
             System.out.println("Forum error:");
