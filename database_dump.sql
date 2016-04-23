@@ -1,4 +1,5 @@
-CREATE DATABASE  IF NOT EXISTS `db_techopark` /*!40100 DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci */;
+DROP DATABASE IF EXISTS `db_techopark`;
+CREATE DATABASE `db_techopark` /*!40100 DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci */;
 USE `db_techopark`;
 -- MySQL dump 10.13  Distrib 5.7.9, for linux-glibc2.5 (x86_64)
 --
@@ -70,7 +71,7 @@ CREATE TABLE `post` (
   CONSTRAINT `fk_post_1` FOREIGN KEY (`tID`) REFERENCES `thread` (`tID`) ON DELETE CASCADE,
   CONSTRAINT `post_ibfk_1` FOREIGN KEY (`forum`) REFERENCES `forum` (`short_name`) ON DELETE CASCADE,
   CONSTRAINT `post_ibfk_2` FOREIGN KEY (`user`) REFERENCES `user` (`email`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -83,9 +84,11 @@ CREATE TABLE `post` (
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `db_techopark`.`post_BEFORE_INSERT` BEFORE INSERT ON `post` FOR EACH ROW
 BEGIN
+DECLARE COUNT INT;
 DECLARE ID INT(4) ZEROFILL;
 DECLARE IDstr CHAR(4);
-SET ID = IF((SELECT COUNT(*) FROM post) > 0, LAST_INSERT_ID() + 1, 1);
+SELECT COUNT(*) INTO COUNT FROM post;
+SET ID = IF(COUNT IS NULL, 1, COUNT + 1);
 SET IDstr = CAST(ID AS CHAR);
 SET NEW.mpath = IF(NEW.parent IS NULL, IDstr, CONCAT((SELECT mpath FROM post WHERE pID=NEW.parent), '.', IDstr)); 
 
@@ -259,4 +262,4 @@ ALTER DATABASE `db_techopark` CHARACTER SET utf8 COLLATE utf8_unicode_ci ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-04-23  3:47:40
+-- Dump completed on 2016-04-23  4:21:47
