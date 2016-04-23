@@ -69,7 +69,7 @@ CREATE TABLE `post` (
   CONSTRAINT `fk_post_forum` FOREIGN KEY (`forum`) REFERENCES `forum` (`short_name`) ON DELETE CASCADE,
   CONSTRAINT `fk_post_thread` FOREIGN KEY (`tID`) REFERENCES `thread` (`tID`) ON DELETE CASCADE,
   CONSTRAINT `fk_post_user` FOREIGN KEY (`user`) REFERENCES `user` (`email`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -82,11 +82,9 @@ CREATE TABLE `post` (
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `db_techopark`.`post_BEFORE_INSERT` BEFORE INSERT ON `post` FOR EACH ROW
 BEGIN
-DECLARE COUNT INT;
 DECLARE ID INT(4) ZEROFILL;
 DECLARE IDstr CHAR(4);
-SELECT COUNT(*) INTO COUNT FROM post;
-SET ID = IF(COUNT IS NULL, 1, COUNT + 1);
+SELECT TABLE_ROWS INTO ID FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='post' AND TABLE_SCHEMA=DATABASE();
 SET IDstr = CAST(ID AS CHAR);
 SET NEW.mpath = IF(NEW.parent IS NULL, IDstr, CONCAT((SELECT mpath FROM post WHERE pID=NEW.parent), '.', IDstr)); 
 
@@ -139,7 +137,7 @@ CREATE TABLE `user` (
   `isAnonymous` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `username` char(30) CHARACTER SET utf8 DEFAULT NULL,
   `about` text CHARACTER SET utf8,
-  `name` char(30) CHARACTER SET utf8 DEFAULT NULL,
+  `name` char(50) CHARACTER SET utf8 DEFAULT NULL,
   `email` char(30) CHARACTER SET utf8 NOT NULL,
   PRIMARY KEY (`uID`),
   UNIQUE KEY `email_UNIQUE` (`email`) USING BTREE,
@@ -259,4 +257,4 @@ ALTER DATABASE `db_techopark` CHARACTER SET utf8 COLLATE utf8_unicode_ci ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-04-23 14:25:32
+-- Dump completed on 2016-04-24  0:03:55

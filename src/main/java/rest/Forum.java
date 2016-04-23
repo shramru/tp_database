@@ -65,7 +65,7 @@ public class Forum {
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 
-    private static void forumDuplicate(String input, JSONObject jsonResult){
+    private static void forumDuplicate(String input, JSONObject jsonResult) {
         try {
             final JSONObject jsonObject = new JSONObject(input);
             RestApplication.DATABASE.execQuery(String.format("SELECT fID FROM forum WHERE short_name=%s", jsonObject.getString("short_name")),
