@@ -191,7 +191,19 @@ public class Thread {
                 if (sort.equals("tree")) {
                     order = "ORDER BY SUBSTRING(mpath,1,4) DESC, mpath ASC";
                 } else if (sort.equals("parent_tree")) {
-                    order = "ORDER BY SUBSTRING(mpath,1,4) DESC, mpath ASC";
+                    String subquery = String.format("SELECT DISTINCT SUBSTRING(mpath,1,4) as head FROM post WHERE tID=%s%s ORDER BY head DESC, mpath ASC",
+                    tID, (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
+                    if (params.containsKey("order"))
+                        subquery = subquery.replace("DESC", params.get("order")[0]);
+                    if (params.containsKey("limit"))
+                        subquery += " LIMIT " + params.get("limit")[0];
+                    order = String.format("AND SUBSTRING(mpath,1,4) BETWEEN \n" +
+                            "(SELECT MIN(t.head) FROM \n" +
+                            "(%s) t)\n" +
+                            "AND\n" +
+                            "(SELECT MAX(t.head) FROM\n" +
+                            "(%s) t)\n" +
+                            "ORDER BY SUBSTRING(mpath,1,4) DESC, mpath ASC", subquery, subquery);
                 }
             }
 
@@ -202,29 +214,14 @@ public class Thread {
             if (params.containsKey("limit") && !sort.equals("parent_tree"))
                 query += " LIMIT " + params.get("limit")[0];
 
-
-
             RestApplication.DATABASE.execQuery(query,
                     result -> {
                         final JSONArray jsonArray = new JSONArray();
-                        result.next();
-                        char minPath = result.getString("mpath").charAt(3);
-                        int counter = 0;
-                        do {
-                            final char newChar = result.getString("mpath").charAt(3);
-                            if (minPath != newChar) {
-                                minPath=newChar;
-                                ++counter;
-                            }
-                            //noinspection OverlyComplexBooleanExpression
-                            if (params.containsKey("sort") && params.get("sort")[0].equals("parent_tree") && params.containsKey("limit") && counter == Integer.valueOf(params.get("limit")[0]))
-                                break;
-
+                        while (result.next()) {
                             final JSONObject post = new JSONObject();
                             Post.postDetails(result.getString("pID"), post);
                             jsonArray.put(post);
-                        } while (result.next());
-
+                        }
                         jsonResult.put("code", 0);
                         jsonResult.put("response", jsonArray);
                     });
