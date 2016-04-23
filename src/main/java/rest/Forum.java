@@ -22,6 +22,8 @@ import java.util.NoSuchElementException;
 @Path("/forum")
 public class Forum {
 
+    public static final int DUPLICATE_ENTRY = 1062;
+
     @POST
     @Path("create")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -31,7 +33,6 @@ public class Forum {
 
         try {
             final JSONObject jsonObject = new JSONObject(input);
-
             final String values = String.format("'%s', '%s', '%s'",
                     jsonObject.getString("name"), jsonObject.getString("short_name"), jsonObject.getString("user"));
 
@@ -41,23 +42,50 @@ public class Forum {
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
-            System.out.println("Forum error:");
-            System.out.println(e.getMessage());
+            if (e.getErrorCode() == DUPLICATE_ENTRY) {
+                forumDuplicate(input, jsonResult);
+            } else {
+                jsonResult.put("code", 4);
+                jsonResult.put("response", "Unknown error");
+                System.out.println("Forum sql error:");
+                System.out.println(e.getMessage());
+            }
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-            System.out.println("Forum error:");
+            System.out.println("Forum invalid error:");
             System.out.println(e.getMessage());
         } catch (NoSuchElementException | NullPointerException | ClassCastException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
-            System.out.println("Forum error:");
+            System.out.println("Forum unknown error:");
             System.out.println(e.getMessage());
         }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
+    }
+
+    private static void forumDuplicate(String input, JSONObject jsonResult){
+        try {
+            final JSONObject jsonObject = new JSONObject(input);
+            RestApplication.DATABASE.execQuery(String.format("SELECT fID FROM forum WHERE short_name=%s", jsonObject.getString("short_name")),
+                    result -> {
+                        result.next();
+                        jsonObject.put("id", result.getInt("fID"));
+                    });
+            jsonResult.put("code", 0);
+            jsonResult.put("response", jsonObject);
+        } catch (SQLException e1) {
+            jsonResult.put("code", 4);
+            jsonResult.put("response", "Unknown error");
+            System.out.println("Forum sql error:");
+            System.out.println(e1.getMessage());
+        } catch (ParseException e1) {
+            jsonResult.put("code", (e1.getMessage().contains("not found") ? 3 : 2));
+            jsonResult.put("response", "Invalid request");
+            System.out.println("Forum invalid error:");
+            System.out.println(e1.getMessage());
+        }
     }
 
     public static void forumDetails(String shortName, JSONObject response) throws SQLException {

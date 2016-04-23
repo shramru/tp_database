@@ -48,17 +48,17 @@ public class Thread {
         } catch (SQLException e) {
             jsonResult.put("code", 5);
             jsonResult.put("response", "Thread exists");
-            System.out.println("Thread error:");
+            System.out.println("Thread exists error:");
             System.out.println(e.getMessage());
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-            System.out.println("Thread error:");
+            System.out.println("Thread invalid error:");
             System.out.println(e.getMessage());
         } catch (NoSuchElementException | ClassCastException | NullPointerException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
-            System.out.println("Thread error:");
+            System.out.println("Thread unknown error:");
             System.out.println(e.getMessage());
         }
 

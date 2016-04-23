@@ -51,17 +51,17 @@ public class Post {
         } catch (SQLException e) {
             jsonResult.put("code", 5);
             jsonResult.put("response", "Post exists");
-            System.out.println("Post error:");
+            System.out.println("Post exists error:");
             System.out.println(e.getMessage());
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-            System.out.println("Post error:");
+            System.out.println("Post invalid error:");
             System.out.println(e.getMessage());
         } catch (NoSuchElementException | ClassCastException | NullPointerException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
-            System.out.println("Post error:");
+            System.out.println("Post unknown error:");
             System.out.println(e.getMessage());
         }
 
