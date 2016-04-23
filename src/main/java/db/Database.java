@@ -69,7 +69,4 @@ public class Database {
         }
     }
 
-    public Connection getConnection() throws SQLException {
-        return dataSource.getConnection();
-    }
 }
