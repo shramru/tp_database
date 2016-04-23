@@ -61,7 +61,7 @@ CREATE TABLE `post` (
   `likes` smallint(5) unsigned NOT NULL DEFAULT '0',
   `dislikes` smallint(5) unsigned NOT NULL DEFAULT '0',
   `points` smallint(6) NOT NULL DEFAULT '0',
-  `mpath` char(80) CHARACTER SET utf8 DEFAULT NULL,
+  `mpath` char(200) CHARACTER SET utf8 DEFAULT NULL,
   PRIMARY KEY (`pID`),
   KEY `user_date` (`user`,`date`),
   KEY `forum_date` (`forum`,`date`),
@@ -204,8 +204,8 @@ DELIMITER ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `insert_post`(_date DATETIME, threadID INT(11), message TEXT, user CHAR(30), forum CHAR(40), parent INT(11), isApproved TINYINT(1), isHighlighted TINYINT(1), isEdited TINYINT(1), isSpam TINYINT(1), isDeleted TINYINT(1))
 BEGIN
-DECLARE ID INT(4) ZEROFILL;
-DECLARE MATPATH CHAR(80);
+DECLARE ID INT(8) ZEROFILL;
+DECLARE MATPATH CHAR(200);
 DECLARE EXIT HANDLER FOR SQLEXCEPTION 
     BEGIN
         ROLLBACK;

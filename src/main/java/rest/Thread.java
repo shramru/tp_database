@@ -190,21 +190,21 @@ public class Thread {
             if (params.containsKey("sort")) {
                 sort = params.get("sort")[0];
                 if (sort.equals("tree")) {
-                    order = "ORDER BY SUBSTRING(mpath,1,4) DESC, mpath ASC";
+                    order = "ORDER BY SUBSTRING_INDEX(mpath,'.',1) DESC, mpath ASC";
                 } else if (sort.equals("parent_tree")) {
-                    String subquery = String.format("SELECT DISTINCT SUBSTRING(mpath,1,4) as head FROM post WHERE tID=%s%s ORDER BY head DESC, mpath ASC",
+                    String subquery = String.format("SELECT DISTINCT SUBSTRING_INDEX(mpath,'.',1) as head FROM post WHERE tID=%s%s ORDER BY head DESC, mpath ASC",
                     tID, (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
                     if (params.containsKey("order"))
                         subquery = subquery.replace("DESC", params.get("order")[0]);
                     if (params.containsKey("limit"))
                         subquery += " LIMIT " + params.get("limit")[0];
-                    order = String.format("AND SUBSTRING(mpath,1,4) BETWEEN \n" +
+                    order = String.format("AND SUBSTRING_INDEX(mpath,'.',1) BETWEEN \n" +
                             "(SELECT MIN(t.head) FROM \n" +
                             "(%s) t)\n" +
                             "AND\n" +
                             "(SELECT MAX(t.head) FROM\n" +
                             "(%s) t)\n" +
-                            "ORDER BY SUBSTRING(mpath,1,4) DESC, mpath ASC", subquery, subquery);
+                            "ORDER BY SUBSTRING_INDEX(mpath,'.',1) DESC, mpath ASC", subquery, subquery);
                 }
             }
 
