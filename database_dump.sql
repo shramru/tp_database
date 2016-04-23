@@ -26,15 +26,15 @@ DROP TABLE IF EXISTS `forum`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `forum` (
-  `fID` int(11) NOT NULL AUTO_INCREMENT,
-  `name` char(35) CHARACTER SET utf8 NOT NULL,
-  `short_name` char(35) CHARACTER SET utf8 NOT NULL,
-  `user` char(25) CHARACTER SET utf8 NOT NULL,
+  `fID` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `name` char(40) CHARACTER SET utf8 NOT NULL,
+  `short_name` char(40) CHARACTER SET utf8 NOT NULL,
+  `user` char(30) CHARACTER SET utf8 NOT NULL,
   PRIMARY KEY (`fID`),
   UNIQUE KEY `name_UNIQUE` (`name`),
   UNIQUE KEY `short_name_UNIQUE` (`short_name`),
-  KEY `user` (`user`),
-  CONSTRAINT `forum_ibfk_1` FOREIGN KEY (`user`) REFERENCES `user` (`email`) ON DELETE CASCADE
+  KEY `fk_forum_user` (`user`),
+  CONSTRAINT `fk_forum_user` FOREIGN KEY (`user`) REFERENCES `user` (`email`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -46,32 +46,30 @@ DROP TABLE IF EXISTS `post`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `post` (
-  `pID` int(11) NOT NULL AUTO_INCREMENT,
+  `pID` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `parent` int(11) DEFAULT NULL,
   `isApproved` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `isHighlighted` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `isEdited` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `isSpam` tinyint(1) unsigned NOT NULL DEFAULT '0',
-  `isDeleted` tinyint(1) NOT NULL DEFAULT '0',
+  `isDeleted` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `date` datetime NOT NULL,
   `message` text CHARACTER SET utf8 NOT NULL,
-  `user` char(25) CHARACTER SET utf8 NOT NULL,
-  `forum` char(35) CHARACTER SET utf8 NOT NULL,
-  `tID` int(11) NOT NULL,
+  `user` char(30) CHARACTER SET utf8 NOT NULL,
+  `forum` char(40) CHARACTER SET utf8 NOT NULL,
+  `tID` int(11) unsigned NOT NULL,
   `likes` smallint(5) unsigned NOT NULL DEFAULT '0',
   `dislikes` smallint(5) unsigned NOT NULL DEFAULT '0',
   `points` smallint(6) NOT NULL DEFAULT '0',
   `mpath` char(80) CHARACTER SET utf8 DEFAULT NULL,
   PRIMARY KEY (`pID`),
-  KEY `parent` (`parent`),
-  KEY `idx_post_fu` (`forum`,`user`),
-  KEY `idx_post_fd` (`forum`,`date`),
-  KEY `idx_post_td` (`tID`,`date`),
-  KEY `idx_post_ud` (`user`,`date`),
-  CONSTRAINT `fk_post_1` FOREIGN KEY (`tID`) REFERENCES `thread` (`tID`) ON DELETE CASCADE,
-  CONSTRAINT `post_ibfk_1` FOREIGN KEY (`forum`) REFERENCES `forum` (`short_name`) ON DELETE CASCADE,
-  CONSTRAINT `post_ibfk_2` FOREIGN KEY (`user`) REFERENCES `user` (`email`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  KEY `user_date` (`user`,`date`),
+  KEY `forum_date` (`forum`,`date`),
+  KEY `tID_date` (`tID`,`date`),
+  CONSTRAINT `fk_post_forum` FOREIGN KEY (`forum`) REFERENCES `forum` (`short_name`) ON DELETE CASCADE,
+  CONSTRAINT `fk_post_thread` FOREIGN KEY (`tID`) REFERENCES `thread` (`tID`) ON DELETE CASCADE,
+  CONSTRAINT `fk_post_user` FOREIGN KEY (`user`) REFERENCES `user` (`email`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -108,11 +106,11 @@ DROP TABLE IF EXISTS `thread`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `thread` (
-  `tID` int(11) NOT NULL AUTO_INCREMENT,
+  `tID` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `isDeleted` tinyint(1) unsigned NOT NULL DEFAULT '0',
-  `forum` char(35) CHARACTER SET utf8 NOT NULL,
+  `forum` char(40) CHARACTER SET utf8 NOT NULL,
   `isClosed` tinyint(1) unsigned NOT NULL,
-  `user` varchar(255) CHARACTER SET utf8 NOT NULL,
+  `user` char(30) CHARACTER SET utf8 NOT NULL,
   `date` datetime NOT NULL,
   `message` text COLLATE utf8_unicode_ci NOT NULL,
   `slug` char(50) CHARACTER SET utf8 NOT NULL,
@@ -120,13 +118,12 @@ CREATE TABLE `thread` (
   `likes` smallint(5) unsigned DEFAULT '0',
   `points` smallint(6) DEFAULT '0',
   `posts` smallint(5) unsigned DEFAULT '0',
-  `title` char(50) CHARACTER SET utf8 DEFAULT NULL,
-  `threadcol` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `title` char(50) CHARACTER SET utf8 NOT NULL,
   PRIMARY KEY (`tID`),
-  KEY `forum` (`forum`),
-  KEY `idx_thread_ud` (`user`,`date`),
-  CONSTRAINT `thread_ibfk_1` FOREIGN KEY (`forum`) REFERENCES `forum` (`short_name`) ON DELETE CASCADE,
-  CONSTRAINT `thread_ibfk_2` FOREIGN KEY (`user`) REFERENCES `user` (`email`) ON DELETE CASCADE
+  KEY `user_date` (`user`,`date`),
+  KEY `forum_date` (`forum`,`date`),
+  CONSTRAINT `fk_thread_user` FOREIGN KEY (`user`) REFERENCES `user` (`email`) ON DELETE CASCADE,
+  CONSTRAINT `ft_thread_forum` FOREIGN KEY (`forum`) REFERENCES `forum` (`short_name`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -138,12 +135,12 @@ DROP TABLE IF EXISTS `user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `user` (
-  `uID` int(11) NOT NULL AUTO_INCREMENT,
+  `uID` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `isAnonymous` tinyint(1) unsigned NOT NULL DEFAULT '0',
-  `username` char(25) CHARACTER SET utf8 DEFAULT NULL,
-  `about` text COLLATE utf8_unicode_ci,
-  `name` varchar(255) CHARACTER SET utf8 DEFAULT NULL,
-  `email` char(25) CHARACTER SET utf8 NOT NULL,
+  `username` char(30) CHARACTER SET utf8 DEFAULT NULL,
+  `about` text CHARACTER SET utf8,
+  `name` char(30) CHARACTER SET utf8 DEFAULT NULL,
+  `email` char(30) CHARACTER SET utf8 NOT NULL,
   PRIMARY KEY (`uID`),
   UNIQUE KEY `email_UNIQUE` (`email`) USING BTREE,
   KEY `name` (`name`)
@@ -158,14 +155,14 @@ DROP TABLE IF EXISTS `user_thread`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `user_thread` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user` char(25) NOT NULL,
-  `tID` int(11) NOT NULL,
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `user` char(30) NOT NULL,
+  `tID` int(11) unsigned NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `user` (`user`),
-  KEY `fk_user_thread_1` (`tID`),
-  CONSTRAINT `fk_user_thread_1` FOREIGN KEY (`tID`) REFERENCES `thread` (`tID`) ON DELETE CASCADE,
-  CONSTRAINT `user_thread_ibfk_1` FOREIGN KEY (`user`) REFERENCES `user` (`email`) ON DELETE CASCADE
+  KEY `fk_ut_user` (`user`),
+  KEY `fk_ut_thread` (`tID`),
+  CONSTRAINT `fk_ut_thread` FOREIGN KEY (`tID`) REFERENCES `thread` (`tID`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ut_user` FOREIGN KEY (`user`) REFERENCES `user` (`email`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -177,14 +174,14 @@ DROP TABLE IF EXISTS `user_user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `user_user` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `follower` char(25) NOT NULL,
-  `followee` char(25) NOT NULL,
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `follower` char(30) NOT NULL,
+  `followee` char(30) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `followee` (`followee`),
-  KEY `user_user_ibfk_1` (`follower`),
-  CONSTRAINT `user_user_ibfk_1` FOREIGN KEY (`follower`) REFERENCES `user` (`email`) ON DELETE CASCADE,
-  CONSTRAINT `user_user_ibfk_2` FOREIGN KEY (`followee`) REFERENCES `user` (`email`) ON DELETE CASCADE
+  KEY `fk_uu_user_2` (`follower`),
+  KEY `fk_uu_user_1` (`followee`),
+  CONSTRAINT `fk_uu_user_1` FOREIGN KEY (`followee`) REFERENCES `user` (`email`) ON DELETE CASCADE,
+  CONSTRAINT `fk_uu_user_2` FOREIGN KEY (`follower`) REFERENCES `user` (`email`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -262,4 +259,4 @@ ALTER DATABASE `db_techopark` CHARACTER SET utf8 COLLATE utf8_unicode_ci ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-04-23  4:21:47
+-- Dump completed on 2016-04-23 14:25:32
