@@ -211,7 +211,7 @@ DECLARE EXIT HANDLER FOR SQLEXCEPTION
 START TRANSACTION;
 
 INSERT INTO post (date, tID, message, user, forum, parent, isApproved, isHighlighted, isEdited, isSpam, isDeleted) VALUES (_date, threadID, message, user, forum, parent, isApproved, isHighlighted, isEdited, isSpam, isDeleted);
-SELECT COUNT(*) INTO ID FROM post;
+SET ID = IF((SELECT COUNT(*) FROM post)=0, LAST_INSERT_ID()-1, LAST_INSERT_ID());
 SET MATPATH=IF(parent IS NULL, CAST(ID AS CHAR), CONCAT_WS('.', (SELECT mpath FROM post WHERE pID=parent), CAST(ID AS CHAR)));
 UPDATE post SET mpath=MATPATH WHERE pID=ID;
 UPDATE thread SET posts=posts+1 WHERE tID = threadID;
