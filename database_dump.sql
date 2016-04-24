@@ -34,7 +34,7 @@ CREATE TABLE `forum` (
   UNIQUE KEY `name_UNIQUE` (`name`),
   UNIQUE KEY `short_name_UNIQUE` (`short_name`),
   KEY `fk_forum_user` (`user`)
-) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -65,7 +65,7 @@ CREATE TABLE `post` (
   KEY `user_date` (`user`,`date`),
   KEY `forum_date` (`forum`,`date`),
   KEY `thread_date` (`tID`,`date`)
-) ENGINE=MyISAM AUTO_INCREMENT=30 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -92,7 +92,7 @@ CREATE TABLE `thread` (
   PRIMARY KEY (`tID`),
   KEY `user_date` (`user`,`date`),
   KEY `forum_date` (`forum`,`date`)
-) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -110,9 +110,8 @@ CREATE TABLE `user` (
   `name` char(50) CHARACTER SET utf8 DEFAULT NULL,
   `email` char(30) CHARACTER SET utf8 NOT NULL,
   PRIMARY KEY (`uID`),
-  UNIQUE KEY `email_UNIQUE` (`email`) USING BTREE,
-  KEY `name` (`name`)
-) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  UNIQUE KEY `email_UNIQUE` (`email`) USING BTREE
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -127,9 +126,8 @@ CREATE TABLE `user_thread` (
   `user` char(30) NOT NULL,
   `tID` int(11) unsigned NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `fk_ut_user` (`user`),
-  KEY `fk_ut_thread` (`tID`)
-) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
+  UNIQUE KEY `user_tID` (`user`,`tID`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -144,9 +142,8 @@ CREATE TABLE `user_user` (
   `follower` char(30) NOT NULL,
   `followee` char(30) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `fk_uu_user_2` (`follower`),
-  KEY `fk_uu_user_1` (`followee`)
-) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+  UNIQUE KEY `user_user` (`follower`,`followee`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -250,4 +247,4 @@ ALTER DATABASE `db_techopark` CHARACTER SET utf8 COLLATE utf8_unicode_ci ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-04-24 14:27:19
+-- Dump completed on 2016-04-25  2:19:05

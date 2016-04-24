@@ -17,6 +17,8 @@ import java.util.Date;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import static rest.Forum.DUPLICATE_ENTRY;
+
 /**
  * Created by vladislav on 18.03.16.
  */
@@ -367,15 +369,37 @@ public class Thread {
 
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
+        } catch (SQLException e) {
+            if (e.getErrorCode() == DUPLICATE_ENTRY) {
+                subscribeDuplicate(input, jsonResult);
+            } else {
+                jsonResult.put("code", 4);
+                jsonResult.put("response", "Unknown error");
+                System.out.println("Thread sql error:");
+                System.out.println(e.getMessage());
+            }
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-        } catch (NoSuchElementException | NullPointerException | SQLException e) {
+        } catch (NoSuchElementException | NullPointerException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
         }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
+    }
+
+    private static void subscribeDuplicate(String input, JSONObject jsonResult) {
+        try {
+            final JSONObject jsonObject = new JSONObject(input);
+            jsonResult.put("code", 0);
+            jsonResult.put("response", jsonObject);
+        } catch (ParseException e1) {
+            jsonResult.put("code", (e1.getMessage().contains("not found") ? 3 : 2));
+            jsonResult.put("response", "Invalid request");
+            System.out.println("Forum invalid error:");
+            System.out.println(e1.getMessage());
+        }
     }
 
     @POST
