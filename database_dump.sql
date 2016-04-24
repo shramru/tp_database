@@ -33,9 +33,8 @@ CREATE TABLE `forum` (
   PRIMARY KEY (`fID`),
   UNIQUE KEY `name_UNIQUE` (`name`),
   UNIQUE KEY `short_name_UNIQUE` (`short_name`),
-  KEY `fk_forum_user` (`user`),
-  CONSTRAINT `fk_forum_user` FOREIGN KEY (`user`) REFERENCES `user` (`email`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  KEY `fk_forum_user` (`user`)
+) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -66,7 +65,7 @@ CREATE TABLE `post` (
   KEY `user_date` (`user`,`date`),
   KEY `forum_date` (`forum`,`date`),
   KEY `thread_date` (`tID`,`date`)
-) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=30 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -92,10 +91,8 @@ CREATE TABLE `thread` (
   `title` char(50) CHARACTER SET utf8 NOT NULL,
   PRIMARY KEY (`tID`),
   KEY `user_date` (`user`,`date`),
-  KEY `forum_date` (`forum`,`date`),
-  CONSTRAINT `fk_thread_user` FOREIGN KEY (`user`) REFERENCES `user` (`email`) ON DELETE CASCADE,
-  CONSTRAINT `ft_thread_forum` FOREIGN KEY (`forum`) REFERENCES `forum` (`short_name`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  KEY `forum_date` (`forum`,`date`)
+) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -115,7 +112,7 @@ CREATE TABLE `user` (
   PRIMARY KEY (`uID`),
   UNIQUE KEY `email_UNIQUE` (`email`) USING BTREE,
   KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -131,10 +128,8 @@ CREATE TABLE `user_thread` (
   `tID` int(11) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_ut_user` (`user`),
-  KEY `fk_ut_thread` (`tID`),
-  CONSTRAINT `fk_ut_thread` FOREIGN KEY (`tID`) REFERENCES `thread` (`tID`) ON DELETE CASCADE,
-  CONSTRAINT `fk_ut_user` FOREIGN KEY (`user`) REFERENCES `user` (`email`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+  KEY `fk_ut_thread` (`tID`)
+) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -150,10 +145,8 @@ CREATE TABLE `user_user` (
   `followee` char(30) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_uu_user_2` (`follower`),
-  KEY `fk_uu_user_1` (`followee`),
-  CONSTRAINT `fk_uu_user_1` FOREIGN KEY (`followee`) REFERENCES `user` (`email`) ON DELETE CASCADE,
-  CONSTRAINT `fk_uu_user_2` FOREIGN KEY (`follower`) REFERENCES `user` (`email`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+  KEY `fk_uu_user_1` (`followee`)
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -203,21 +196,11 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `insert_post`(_date DATETIME, thread
 BEGIN
 DECLARE ID INT(8) ZEROFILL;
 DECLARE MATPATH CHAR(200);
-DECLARE EXIT HANDLER FOR SQLEXCEPTION 
-    BEGIN
-        ROLLBACK;
-    END;
-
-START TRANSACTION;
-
 INSERT INTO post (date, tID, message, user, forum, parent, isApproved, isHighlighted, isEdited, isSpam, isDeleted) VALUES (_date, threadID, message, user, forum, parent, isApproved, isHighlighted, isEdited, isSpam, isDeleted);
 SET ID = IF((SELECT COUNT(*) FROM post)=0, LAST_INSERT_ID()-1, LAST_INSERT_ID());
 SET MATPATH=IF(parent IS NULL, CAST(ID AS CHAR), CONCAT_WS('.', (SELECT mpath FROM post WHERE pID=parent), CAST(ID AS CHAR)));
 UPDATE post SET mpath=MATPATH WHERE pID=ID;
 UPDATE thread SET posts=posts+1 WHERE tID = threadID;
-
-COMMIT;
-
 
 SELECT ID;
 END ;;
@@ -267,4 +250,4 @@ ALTER DATABASE `db_techopark` CHARACTER SET utf8 COLLATE utf8_unicode_ci ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-04-24  3:37:28
+-- Dump completed on 2016-04-24 14:27:19
