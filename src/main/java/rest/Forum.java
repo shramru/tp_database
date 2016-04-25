@@ -263,8 +263,9 @@ public class Forum {
 
         try {
             final String shortName = params.get("forum")[0];
-            String query = String.format("SELECT DISTINCT email FROM (SELECT email FROM user FORCE INDEX(name) %s ORDER BY name DESC) u JOIN post p WHERE p.user=u.email AND forum='%s'",
-                    (params.containsKey("since_id") ? String.format("WHERE uID >= %s", params.get("since_id")[0]) : ""), shortName );
+
+            String query = String.format("SELECT email FROM user FORCE INDEX(name) WHERE email IN (SELECT DISTINCT user FROM post WHERE forum='%s') %s ORDER BY name DESC",
+                    shortName, (params.containsKey("since_id") ? String.format("AND uID >= %s", params.get("since_id")[0]) : ""));
             if (params.containsKey("order"))
                 query = query.replace("DESC", params.get("order")[0]);
             if (params.containsKey("limit"))
