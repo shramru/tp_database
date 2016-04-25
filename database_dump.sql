@@ -34,7 +34,7 @@ CREATE TABLE `forum` (
   UNIQUE KEY `name_UNIQUE` (`name`),
   UNIQUE KEY `short_name_UNIQUE` (`short_name`),
   KEY `fk_forum_user` (`user`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -65,7 +65,7 @@ CREATE TABLE `post` (
   KEY `user_date` (`user`,`date`),
   KEY `forum_date` (`forum`,`date`),
   KEY `thread_date` (`tID`,`date`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2594 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -92,7 +92,7 @@ CREATE TABLE `thread` (
   PRIMARY KEY (`tID`),
   KEY `user_date` (`user`,`date`),
   KEY `forum_date` (`forum`,`date`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=101 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -111,7 +111,7 @@ CREATE TABLE `user` (
   `email` char(30) CHARACTER SET utf8 NOT NULL,
   PRIMARY KEY (`uID`),
   UNIQUE KEY `email_UNIQUE` (`email`) USING BTREE
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1001 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -127,7 +127,7 @@ CREATE TABLE `user_thread` (
   `tID` int(11) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_tID` (`user`,`tID`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -143,7 +143,7 @@ CREATE TABLE `user_user` (
   `followee` char(30) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_user` (`follower`,`followee`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -193,12 +193,16 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `insert_post`(_date DATETIME, thread
 BEGIN
 DECLARE ID INT(8) ZEROFILL;
 DECLARE MATPATH CHAR(200);
+
 INSERT INTO post (date, tID, message, user, forum, parent, isApproved, isHighlighted, isEdited, isSpam, isDeleted) VALUES (_date, threadID, message, user, forum, parent, isApproved, isHighlighted, isEdited, isSpam, isDeleted);
 SET ID = IF((SELECT COUNT(*) FROM post)=0, LAST_INSERT_ID()-1, LAST_INSERT_ID());
 SET MATPATH=IF(parent IS NULL, CAST(ID AS CHAR), CONCAT_WS('.', (SELECT mpath FROM post WHERE pID=parent), CAST(ID AS CHAR)));
 UPDATE post SET mpath=MATPATH WHERE pID=ID;
-UPDATE thread SET posts=posts+1 WHERE tID = threadID;
-
+CASE isDeleted
+  WHEN 0 THEN
+    UPDATE thread SET posts=posts+1 WHERE tID = threadID;
+  ELSE BEGIN END;
+END CASE;
 SELECT ID;
 END ;;
 DELIMITER ;
@@ -247,4 +251,4 @@ ALTER DATABASE `db_techopark` CHARACTER SET utf8 COLLATE utf8_unicode_ci ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-04-25  2:19:05
+-- Dump completed on 2016-04-25 15:44:29

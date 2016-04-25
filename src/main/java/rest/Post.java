@@ -35,11 +35,8 @@ public class Post {
         try {
             final JSONObject jsonObject = new JSONObject(input);
 
-            final String parent = jsonObject.getString("parent");
-            final String thread = jsonObject.getString("thread");
-
             final String values = String.format("'%s', %s, '%s', '%s', '%s', %s, %s, %s, %s, %s, %s",
-                    jsonObject.getString("date"), thread, jsonObject.getString("message"), jsonObject.getString("user"), jsonObject.getString("forum"), parent,
+                    jsonObject.getString("date"), jsonObject.getString("thread"), jsonObject.getString("message"), jsonObject.getString("user"), jsonObject.getString("forum"), jsonObject.getString("parent"),
                     jsonObject.has("isApproved") ? (jsonObject.getBoolean("isApproved") ? '1' : '0') : '0',  jsonObject.has("isHighlighted") ? (jsonObject.getBoolean("isHighlighted") ? '1' : '0') : '0',
             jsonObject.has("isEdited") ? (jsonObject.getBoolean("isEdited") ? '1' : '0') : '0',  jsonObject.has("isSpam") ? (jsonObject.getBoolean("isSpam") ? '1' : '0') : '0',
             jsonObject.has("isDeleted") ? (jsonObject.getBoolean("isDeleted") ? '1' : '0') : '0');
