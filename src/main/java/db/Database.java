@@ -17,13 +17,23 @@ public class Database {
     public Database() {
         dataSource = new BasicDataSource();
         dataSource.setDriverClassName("com.mysql.jdbc.Driver");
-        dataSource.setUrl("jdbc:mysql://localhost:3306/db_techopark?allowMultiQueries=true");
+        dataSource.setUrl("jdbc:mysql://localhost:3306/db_techopark?allowMultiQueries=true&autoReconnect=true");
         dataSource.setUsername("www-data");
         dataSource.setPassword("technopark");
-        dataSource.setMaxTotal(-1);
+        dataSource.setMaxTotal(100);
         dataSource.setInitialSize(10);
-        dataSource.setMinIdle(15);
-        dataSource.setMaxIdle(20);
+        dataSource.setMinIdle(10);
+        dataSource.setMaxIdle(50);
+        dataSource.setTestWhileIdle(true);
+        dataSource.setTestOnBorrow(true);
+        dataSource.setTestOnReturn(false);
+        dataSource.setValidationQuery("SELECT 1");
+        dataSource.setValidationQueryTimeout(30000);
+        dataSource.setTimeBetweenEvictionRunsMillis(5000);
+        dataSource.setMaxWaitMillis(10000);
+        dataSource.setRemoveAbandonedTimeout(60);
+        dataSource.setLogAbandoned(true);
+        dataSource.setMinEvictableIdleTimeMillis(30000);
     }
 
     public void execQuery(String query, ResultHandler handler) throws SQLException {
