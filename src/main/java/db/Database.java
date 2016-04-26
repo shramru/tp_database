@@ -13,15 +13,15 @@ public class Database {
 
     final BasicDataSource dataSource;
 
-    public Database() throws SQLException {
+    public Database() {
         dataSource = new BasicDataSource();
         dataSource.setDriverClassName("com.mysql.jdbc.Driver");
         dataSource.setUrl("jdbc:mysql://localhost:3306/db_techopark?allowMultiQueries=true");
         dataSource.setUsername("www-data");
         dataSource.setPassword("technopark");
         dataSource.setMaxTotal(-1);
-
-        execQuery("SELECT 1", ResultSet::next);
+        dataSource.setMaxIdle(-1);
+        dataSource.setValidationQuery("SELECT 1");
     }
 
     public void execQuery(String query, ResultHandler handler) throws SQLException {

@@ -41,7 +41,7 @@ public class Main {
             System.exit(1);
         }
 
-        Database database = new Database();
+        final Database database = new Database();
 
         System.out.append("Jetty starting at port: ").append(String.valueOf(port)).append('\n');
 
