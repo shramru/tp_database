@@ -21,8 +21,9 @@ public class Database {
         dataSource.setUsername("www-data");
         dataSource.setPassword("technopark");
         dataSource.setMaxTotal(-1);
+        dataSource.setInitialSize(10);
         dataSource.setMinIdle(15);
-        dataSource.setMaxIdle(50);
+        dataSource.setMaxIdle(20);
     }
 
     public void execQuery(String query, ResultHandler handler) throws SQLException {
@@ -34,7 +35,6 @@ public class Database {
                 }
             }
         }
-        System.out.println(dataSource.getNumActive());
     }
 
     public <T> T execQuery(String query, TResultHandler<T> handler) throws SQLException {
