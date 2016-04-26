@@ -1,7 +1,7 @@
 package rest;
 
+import db.Database;
 import org.json.JSONObject;
-
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -21,11 +21,11 @@ public class General {
     @Path("clear")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response clear(final String input, @Context HttpServletRequest request) {
+    public Response clear(final String input, @Context Database database) {
         final JSONObject jsonResult = new JSONObject();
 
         try {
-            RestApplication.DATABASE.execUpdate("CALL clear");
+            database.execUpdate("CALL clear");
 
             jsonResult.put("code", 0);
             jsonResult.put("response", "OK");
@@ -40,11 +40,11 @@ public class General {
     @GET
     @Path("status")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response status(@Context HttpServletRequest request) {
+    public Response status(@Context HttpServletRequest request, @Context Database database) {
         final JSONObject jsonResult = new JSONObject();
 
         try {
-            RestApplication.DATABASE.execQuery("CALL status",
+            database.execQuery("CALL status",
                     result -> {
                         final JSONObject response = new JSONObject();
 

@@ -1,5 +1,6 @@
 package rest;
 
+import db.Database;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import javax.inject.Singleton;
@@ -29,7 +30,7 @@ public class Forum {
     @Path("create")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response create(final String input, @Context HttpServletRequest request) {
+    public Response create(final String input, @Context Database database) {
         final JSONObject jsonResult = new JSONObject();
 
         try {
@@ -37,14 +38,14 @@ public class Forum {
             final String values = String.format("'%s', '%s', '%s'",
                     jsonObject.getString("name"), jsonObject.getString("short_name"), jsonObject.getString("user"));
 
-            final int fID = RestApplication.DATABASE.execUpdate(String.format("INSERT INTO forum (name, short_name, user) VALUES (%s)", values));
+            final int fID = database.execUpdate(String.format("INSERT INTO forum (name, short_name, user) VALUES (%s)", values));
             jsonObject.put("id", fID);
 
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
         } catch (SQLException e) {
             if (e.getErrorCode() == DUPLICATE_ENTRY) {
-                forumDuplicate(input, jsonResult);
+                forumDuplicate(database, input, jsonResult);
             } else {
                 jsonResult.put("code", 4);
                 jsonResult.put("response", "Unknown error");
@@ -66,10 +67,10 @@ public class Forum {
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 
-    private static void forumDuplicate(String input, JSONObject jsonResult) {
+    private static void forumDuplicate(Database database, String input, JSONObject jsonResult) {
         try {
             final JSONObject jsonObject = new JSONObject(input);
-            RestApplication.DATABASE.execQuery(String.format("SELECT fID FROM forum WHERE short_name=%s", jsonObject.getString("short_name")),
+            database.execQuery(String.format("SELECT fID FROM forum WHERE short_name=%s", jsonObject.getString("short_name")),
                     result -> {
                         result.next();
                         jsonObject.put("id", result.getInt("fID"));
@@ -89,8 +90,8 @@ public class Forum {
         }
     }
 
-    public static void forumDetails(String shortName, JSONObject response) throws SQLException {
-        RestApplication.DATABASE.execQuery(String.format("SELECT * FROM forum WHERE short_name='%s'", shortName),
+    public static void forumDetails(Database database, String shortName, JSONObject response) throws SQLException {
+        database.execQuery(String.format("SELECT * FROM forum WHERE short_name='%s'", shortName),
                 result -> {
                     result.next();
                     forumDetailstoJSON(result, response);
@@ -107,18 +108,18 @@ public class Forum {
     @GET
     @Path("details")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response details(@Context HttpServletRequest request) {
+    public Response details(@Context HttpServletRequest request, @Context Database database) {
         final Map<String, String[]> params = request.getParameterMap();
         final JSONObject jsonResult = new JSONObject();
 
         try {
             final String shortName = params.get("forum")[0];
             final JSONObject response = new JSONObject();
-            forumDetails(shortName, response);
+            forumDetails(database, shortName, response);
 
             if (params.containsKey("related")) {
                 final JSONObject user = new JSONObject();
-                User.userDetails(response.getString("user"), user);
+                User.userDetails(database, response.getString("user"), user);
                 response.put("user", user);
             }
 
@@ -141,7 +142,7 @@ public class Forum {
     @GET
     @Path("listPosts")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response listPosts(@Context HttpServletRequest request) {
+    public Response listPosts(@Context HttpServletRequest request, @Context Database database) {
         final Map<String, String[]> params = request.getParameterMap();
         final JSONObject jsonResult = new JSONObject();
 
@@ -153,7 +154,7 @@ public class Forum {
                     (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : "")
             );
 
-            RestApplication.DATABASE.execQuery(query,
+            database.execQuery(query,
                     result -> {
                         final JSONArray jsonArray = new JSONArray();
 
@@ -165,17 +166,17 @@ public class Forum {
                                 final String[] param = params.get("related");
                                 if(Arrays.asList(param).contains("thread")) {
                                     final JSONObject thread = new JSONObject();
-                                    Thread.threadDetails(post.getString("thread"), thread);
+                                    ForumThread.threadDetails(database, post.getString("thread"), thread);
                                     post.put("thread", thread);
                                 }
                                 if(Arrays.asList(param).contains("forum")) {
                                     final JSONObject forum = new JSONObject();
-                                    Forum.forumDetails(post.getString("forum"), forum);
+                                    Forum.forumDetails(database, post.getString("forum"), forum);
                                     post.put("forum", forum);
                                 }
                                 if(Arrays.asList(param).contains("user")) {
                                     final JSONObject user = new JSONObject();
-                                    User.userDetails(post.getString("user"), user);
+                                    User.userDetails(database, post.getString("user"), user);
                                     post.put("user", user);
                                 }
                             }
@@ -203,7 +204,7 @@ public class Forum {
     @GET
     @Path("listThreads")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response listThreads(@Context HttpServletRequest request) {
+    public Response listThreads(@Context HttpServletRequest request, @Context Database database) {
         final Map<String, String[]> params = request.getParameterMap();
         final JSONObject jsonResult = new JSONObject();
 
@@ -215,24 +216,24 @@ public class Forum {
                     (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : "")
             );
 
-            RestApplication.DATABASE.execQuery(query,
+            database.execQuery(query,
                     result -> {
                         final JSONArray jsonArray = new JSONArray();
 
                         while (result.next()) {
                             final JSONObject thread = new JSONObject();
-                            Thread.threadDetailstoJSON(result, thread);
+                            ForumThread.threadDetailstoJSON(result, thread);
 
                             if (params.containsKey("related")) {
                                 final String[] param = params.get("related");
                                 if(Arrays.asList(param).contains("forum")) {
                                     final JSONObject forum = new JSONObject();
-                                    Forum.forumDetails(thread.getString("forum"), forum);
+                                    Forum.forumDetails(database, thread.getString("forum"), forum);
                                     thread.put("forum", forum);
                                 }
                                 if(Arrays.asList(param).contains("user")) {
                                     final JSONObject user = new JSONObject();
-                                    User.userDetails(thread.getString("user"), user);
+                                    User.userDetails(database, thread.getString("user"), user);
                                     thread.put("user", user);
                                 }
                             }
@@ -260,7 +261,7 @@ public class Forum {
     @GET
     @Path("listUsers")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response listUsers(@Context HttpServletRequest request) {
+    public Response listUsers(@Context HttpServletRequest request, @Context Database database) {
         final Map<String, String[]> params = request.getParameterMap();
         final JSONObject jsonResult = new JSONObject();
 
@@ -272,13 +273,13 @@ public class Forum {
                     (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : "")
             );
 
-            RestApplication.DATABASE.execQuery(query,
+            database.execQuery(query,
                     result -> {
                         final JSONArray jsonArray = new JSONArray();
 
                         while (result.next()) {
                             final JSONObject user = new JSONObject();
-                            User.userDetailstoJSON(result, user);
+                            User.userDetailstoJSON(database, result, user);
                             jsonArray.put(user);
                         }
 

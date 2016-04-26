@@ -1,5 +1,6 @@
 package rest;
 
+import db.Database;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import javax.inject.Singleton;
@@ -13,7 +14,6 @@ import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.Map;
 import java.util.NoSuchElementException;
-
 import static rest.Forum.DUPLICATE_ENTRY;
 
 /**
@@ -27,7 +27,7 @@ public class User {
     @Path("create")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response create(final String input, @Context HttpServletRequest request) {
+    public Response create(final String input, @Context Database database) {
         final JSONObject jsonResult = new JSONObject();
 
         try {
@@ -37,7 +37,7 @@ public class User {
                     jsonObject.get("username"), jsonObject.get("about"), jsonObject.get("name"), jsonObject.get("email"),
                     jsonObject.has("isAnonymous") ? (jsonObject.getBoolean("isAnonymous") ? '1' : '0') : '0').replaceAll("'null'", "null");
 
-            final int uID = RestApplication.DATABASE.execUpdate(
+            final int uID = database.execUpdate(
                     String.format("INSERT INTO user (username, about, name, email, isAnonymous) VALUES (%s)", values));
             jsonObject.put("id", uID);
 
@@ -66,14 +66,14 @@ public class User {
     @GET
     @Path("details")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response details(@Context HttpServletRequest request) throws SQLException {
+    public Response details(@Context HttpServletRequest request, @Context Database database) throws SQLException {
         final Map<String, String[]> params = request.getParameterMap();
         final JSONObject jsonResult = new JSONObject();
 
         try {
             final String email = params.get("user")[0];
             final JSONObject response = new JSONObject();
-            userDetails(email, response);
+            userDetails(database, email, response);
 
             jsonResult.put("code", 0);
             jsonResult.put("response", response);
@@ -91,15 +91,15 @@ public class User {
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 
-    public static void userDetails(String email, JSONObject response) throws SQLException {
-        RestApplication.DATABASE.execQuery(String.format("SELECT * FROM user where email='%s'", email),
+    public static void userDetails(Database database, String email, JSONObject response) throws SQLException {
+        database.execQuery(String.format("SELECT * FROM user where email='%s'", email),
                 result -> {
                     result.next();
-                    userDetailstoJSON(result, response);
+                    userDetailstoJSON(database, result, response);
                 });
     }
 
-    public static void userDetailstoJSON(ResultSet resultSet, JSONObject response) throws SQLException {
+    public static void userDetailstoJSON(Database database, ResultSet resultSet, JSONObject response) throws SQLException {
         final String email = resultSet.getString("email");
 
         response.put("about", resultSet.getString("about") == null ? JSONObject.NULL : resultSet.getString("about"));
@@ -109,7 +109,7 @@ public class User {
         response.put("name", resultSet.getString("name") == null ? JSONObject.NULL : resultSet.getString("name"));
         response.put("username", resultSet.getString("username") == null ? JSONObject.NULL : resultSet.getString("username"));
 
-        RestApplication.DATABASE.execQuery(
+        database.execQuery(
                 String.format("SELECT follower FROM user_user WHERE followee='%s'", email),
                 result -> {
                     final JSONArray jsonArray = new JSONArray();
@@ -118,7 +118,7 @@ public class User {
 
                     response.put("followers", jsonArray);
                 });
-        RestApplication.DATABASE.execQuery(
+        database.execQuery(
                 String.format("SELECT followee FROM user_user WHERE follower='%s'", email),
                 result -> {
                     final JSONArray jsonArray = new JSONArray();
@@ -127,7 +127,7 @@ public class User {
 
                     response.put("following", jsonArray);
                 });
-        RestApplication.DATABASE.execQuery(
+        database.execQuery(
                 String.format("SELECT tID FROM user_thread WHERE user='%s'", email),
                 result -> {
                     final JSONArray jsonArray = new JSONArray();
@@ -142,7 +142,7 @@ public class User {
     @Path("follow")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response follow(final String input, @Context HttpServletRequest request) {
+    public Response follow(final String input, @Context Database database) {
         final JSONObject jsonResult = new JSONObject();
 
         try {
@@ -150,16 +150,16 @@ public class User {
             final String follower = jsonObject.getString("follower");
             final String followee = jsonObject.getString("followee");
 
-            RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user_user (follower, followee) VALUES ('%s', '%s')", follower, followee));
+            database.execUpdate(String.format("INSERT INTO user_user (follower, followee) VALUES ('%s', '%s')", follower, followee));
 
             final JSONObject response = new JSONObject();
-            userDetails(follower, response);
+            userDetails(database, follower, response);
 
             jsonResult.put("code", 0);
             jsonResult.put("response", response);
         } catch (SQLException e) {
             if (e.getErrorCode() == DUPLICATE_ENTRY) {
-                followDuplicate(input, jsonResult);
+                followDuplicate(database, input, jsonResult);
             } else {
                 jsonResult.put("code", 4);
                 jsonResult.put("response", "Unknown error");
@@ -177,11 +177,11 @@ public class User {
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
     }
 
-    private static void followDuplicate(String input, JSONObject jsonResult) {
+    private static void followDuplicate(Database database, String input, JSONObject jsonResult) {
         try {
             final JSONObject jsonObject = new JSONObject(input);
             final JSONObject response = new JSONObject();
-            userDetails(jsonObject.getString("follower"), response);
+            userDetails(database, jsonObject.getString("follower"), response);
 
             jsonResult.put("code", 0);
             jsonResult.put("response", response);
@@ -202,7 +202,7 @@ public class User {
     @Path("unfollow")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response unfollow(final String input, @Context HttpServletRequest request) {
+    public Response unfollow(final String input, @Context Database database) {
         final JSONObject jsonResult = new JSONObject();
 
         try {
@@ -210,10 +210,10 @@ public class User {
             final String follower = jsonObject.getString("follower");
             final String followee = jsonObject.getString("followee");
 
-            RestApplication.DATABASE.execUpdate(String.format("DELETE FROM user_user WHERE follower='%s' AND followee='%s'", follower, followee));
+            database.execUpdate(String.format("DELETE FROM user_user WHERE follower='%s' AND followee='%s'", follower, followee));
 
             final JSONObject response = new JSONObject();
-            userDetails(follower, response);
+            userDetails(database, follower, response);
 
             jsonResult.put("code", 0);
             jsonResult.put("response", response);
@@ -234,7 +234,7 @@ public class User {
     @GET
     @Path("listFollowers")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response listFollowers(@Context HttpServletRequest request) {
+    public Response listFollowers(@Context HttpServletRequest request, @Context Database database) {
         final Map<String, String[]> params = request.getParameterMap();
         final JSONObject jsonResult = new JSONObject();
 
@@ -246,13 +246,13 @@ public class User {
                     (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : "")
             );
 
-            RestApplication.DATABASE.execQuery(query,
+            database.execQuery(query,
                     result -> {
                         final JSONArray jsonArray = new JSONArray();
 
                         while (result.next()) {
                             final JSONObject user = new JSONObject();
-                            userDetailstoJSON(result, user);
+                            userDetailstoJSON(database, result, user);
                             jsonArray.put(user);
                         }
 
@@ -276,7 +276,7 @@ public class User {
     @GET
     @Path("listFollowing")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response listFollowing(@Context HttpServletRequest request) {
+    public Response listFollowing(@Context HttpServletRequest request, @Context Database database) {
         final Map<String, String[]> params = request.getParameterMap();
         final JSONObject jsonResult = new JSONObject();
 
@@ -288,13 +288,13 @@ public class User {
                     (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : "")
             );
 
-            RestApplication.DATABASE.execQuery(query,
+            database.execQuery(query,
                     result -> {
                         final JSONArray jsonArray = new JSONArray();
 
                         while (result.next()) {
                             final JSONObject user = new JSONObject();
-                            userDetailstoJSON(result, user);
+                            userDetailstoJSON(database, result, user);
                             jsonArray.put(user);
                         }
 
@@ -318,7 +318,7 @@ public class User {
     @GET
     @Path("listPosts")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response listPosts(@Context HttpServletRequest request) {
+    public Response listPosts(@Context HttpServletRequest request, @Context Database database) {
         final Map<String, String[]> params = request.getParameterMap();
         final JSONObject jsonResult = new JSONObject();
 
@@ -330,7 +330,7 @@ public class User {
                     (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : "")
             );
 
-            RestApplication.DATABASE.execQuery(query,
+            database.execQuery(query,
                     result -> {
                         final JSONArray jsonArray = new JSONArray();
 
@@ -361,19 +361,19 @@ public class User {
     @Path("updateProfile")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updateProfile(final String input, @Context HttpServletRequest request) {
+    public Response updateProfile(final String input, @Context Database database) {
         final JSONObject jsonResult = new JSONObject();
 
         try {
             final JSONObject jsonObject = new JSONObject(input);
             final String email = jsonObject.getString("user");
 
-            RestApplication.DATABASE.execUpdate(String.format("UPDATE user SET about='%s', name='%s' WHERE email='%s'",
+            database.execUpdate(String.format("UPDATE user SET about='%s', name='%s' WHERE email='%s'",
                     jsonObject.get("about"), jsonObject.get("name"), email).replaceAll("'null'", "null")
             );
 
             final JSONObject response = new JSONObject();
-            userDetails(email, response);
+            userDetails(database, email, response);
             jsonResult.put("code", 0);
             jsonResult.put("response", response);
         } catch (SQLException e) {

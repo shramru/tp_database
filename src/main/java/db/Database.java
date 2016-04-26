@@ -13,20 +13,14 @@ public class Database {
 
     final BasicDataSource dataSource;
 
-    public Database() {
+    public Database() throws SQLException {
         dataSource = new BasicDataSource();
         dataSource.setDriverClassName("com.mysql.jdbc.Driver");
         dataSource.setUrl("jdbc:mysql://localhost:3306/db_techopark?allowMultiQueries=true");
         dataSource.setUsername("www-data");
         dataSource.setPassword("technopark");
-        dataSource.setPoolPreparedStatements(true);
-    }
 
-    @Override
-    @SuppressWarnings("OverlyBroadThrowsClause")
-    protected void finalize() throws Throwable {
-        dataSource.close();
-        super.finalize();
+        execQuery("SELECT 1", ResultSet::next);
     }
 
     public void execQuery(String query, ResultHandler handler) throws SQLException {
