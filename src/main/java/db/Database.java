@@ -21,7 +21,6 @@ public class Database {
         dataSource.setPassword("technopark");
         dataSource.setMaxTotal(-1);
         dataSource.setMaxIdle(-1);
-        dataSource.setValidationQuery("SELECT 1");
     }
 
     public void execQuery(String query, ResultHandler handler) throws SQLException {
