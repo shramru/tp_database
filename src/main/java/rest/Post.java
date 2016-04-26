@@ -8,6 +8,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -36,10 +37,13 @@ public class Post {
             final JSONObject jsonObject = new JSONObject(input);
 
             final String values = String.format("'%s', %s, '%s', '%s', '%s', %s, %s, %s, %s, %s, %s",
-                    jsonObject.getString("date"), jsonObject.getString("thread"), jsonObject.getString("message"), jsonObject.getString("user"), jsonObject.getString("forum"), jsonObject.getString("parent"),
-                    jsonObject.has("isApproved") ? (jsonObject.getBoolean("isApproved") ? '1' : '0') : '0',  jsonObject.has("isHighlighted") ? (jsonObject.getBoolean("isHighlighted") ? '1' : '0') : '0',
-            jsonObject.has("isEdited") ? (jsonObject.getBoolean("isEdited") ? '1' : '0') : '0',  jsonObject.has("isSpam") ? (jsonObject.getBoolean("isSpam") ? '1' : '0') : '0',
-            jsonObject.has("isDeleted") ? (jsonObject.getBoolean("isDeleted") ? '1' : '0') : '0');
+                    jsonObject.getString("date"), jsonObject.getString("thread"), jsonObject.getString("message"),
+                    jsonObject.getString("user"), jsonObject.getString("forum"), jsonObject.getString("parent"),
+                    jsonObject.has("isApproved") ? (jsonObject.getBoolean("isApproved") ? '1' : '0') : '0',
+                    jsonObject.has("isHighlighted") ? (jsonObject.getBoolean("isHighlighted") ? '1' : '0') : '0',
+                    jsonObject.has("isEdited") ? (jsonObject.getBoolean("isEdited") ? '1' : '0') : '0',
+                    jsonObject.has("isSpam") ? (jsonObject.getBoolean("isSpam") ? '1' : '0') : '0',
+                    jsonObject.has("isDeleted") ? (jsonObject.getBoolean("isDeleted") ? '1' : '0') : '0');
 
             final int pID = RestApplication.DATABASE.execQuery(String.format("CALL insert_post(%s)", values),
                     result -> {
@@ -66,27 +70,31 @@ public class Post {
     }
 
     public static void postDetails(String id, JSONObject response) throws SQLException {
-        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
         RestApplication.DATABASE.execQuery(String.format("SELECT * FROM post WHERE pID=%s", id),
                 result -> {
                     result.next();
-                    response.put("date", df.format(new Date(result.getTimestamp("date").getTime())));
-                    response.put("dislikes", result.getInt("dislikes"));
-                    response.put("forum", result.getString("forum"));
-                    response.put("id", result.getInt("pID"));
-                    response.put("isApproved", result.getBoolean("isApproved"));
-                    response.put("isDeleted", result.getBoolean("isDeleted"));
-                    response.put("isEdited", result.getBoolean("isEdited"));
-                    response.put("isHighlighted", result.getBoolean("isHighlighted"));
-                    response.put("isSpam", result.getBoolean("isSpam"));
-                    response.put("likes", result.getInt("likes"));
-                    response.put("message", result.getString("message"));
-                    response.put("parent", result.getObject("parent") == null ? JSONObject.NULL : result.getObject("parent"));
-                    response.put("points", result.getInt("points"));
-                    response.put("thread", result.getInt("tID"));
-                    response.put("user", result.getString("user"));
+                    postDetailstoJSON(result, response);
                 });
+    }
+
+    public static void postDetailstoJSON(ResultSet result, JSONObject response) throws SQLException {
+        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+        response.put("date", df.format(new Date(result.getTimestamp("date").getTime())));
+        response.put("dislikes", result.getInt("dislikes"));
+        response.put("forum", result.getString("forum"));
+        response.put("id", result.getInt("pID"));
+        response.put("isApproved", result.getBoolean("isApproved"));
+        response.put("isDeleted", result.getBoolean("isDeleted"));
+        response.put("isEdited", result.getBoolean("isEdited"));
+        response.put("isHighlighted", result.getBoolean("isHighlighted"));
+        response.put("isSpam", result.getBoolean("isSpam"));
+        response.put("likes", result.getInt("likes"));
+        response.put("message", result.getString("message"));
+        response.put("parent", result.getObject("parent") == null ? JSONObject.NULL : result.getObject("parent"));
+        response.put("points", result.getInt("points"));
+        response.put("thread", result.getInt("thread"));
+        response.put("user", result.getString("user"));
     }
 
     @GET
@@ -144,21 +152,14 @@ public class Post {
         final JSONObject jsonResult = new JSONObject();
 
         try {
-            String query = "";
-            if (params.containsKey("forum")) {
-                final String shortName = params.get("forum")[0];
-                query = String.format("SELECT pID FROM post WHERE forum='%s'%s ORDER BY date DESC", shortName,
-                        (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
-            } else if (params.containsKey("thread")) {
-                final String id = params.get("thread")[0];
-                query = String.format("SELECT pID FROM post WHERE tID=%s%s ORDER BY date DESC", id,
-                        (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
-            }
-
-            if (params.containsKey("order"))
-                query = query.replace("DESC", params.get("order")[0]);
-            if (params.containsKey("limit"))
-                query += " LIMIT " + params.get("limit")[0];
+            final String table = (params.containsKey("forum") ? "forum" : "thread");
+            final String query = String.format("SELECT * FROM post WHERE %s='%s' %s %s %s",
+                    table,
+                    params.get(table)[0],
+                    (params.containsKey("since") ? String.format("AND date >= '%s'", params.get("since")[0]) : ""),
+                    String.format("ORDER BY date %s", ((params.containsKey("order") ? params.get("order")[0] : "desc"))),
+                    (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : "")
+            );
 
             RestApplication.DATABASE.execQuery(query,
                     result -> {
@@ -166,7 +167,7 @@ public class Post {
 
                         while (result.next()) {
                             final JSONObject post = new JSONObject();
-                            postDetails(result.getString("pID"), post);
+                            Post.postDetailstoJSON(result, post);
                             jsonArray.put(post);
                         }
 
@@ -197,8 +198,10 @@ public class Post {
         try {
             final JSONObject jsonObject = new JSONObject(input);
 
-            RestApplication.DATABASE.execUpdate(String.format("UPDATE post SET isDeleted=1 WHERE pID=%s", jsonObject.getString("post")));
-            RestApplication.DATABASE.execUpdate(String.format("UPDATE thread SET posts=posts-1 WHERE tID=(SELECT tID FROM post WHERE pID=%s)", jsonObject.getString("post")));
+            RestApplication.DATABASE.execUpdate(
+                    String.format("UPDATE post SET isDeleted=1 WHERE pID=%s; UPDATE thread SET posts=posts-1 WHERE tID=(SELECT thread FROM post WHERE pID=%s)",
+                            jsonObject.getString("post"), jsonObject.getString("post"))
+            );
 
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
@@ -226,8 +229,10 @@ public class Post {
         try {
             final JSONObject jsonObject = new JSONObject(input);
 
-            RestApplication.DATABASE.execUpdate(String.format("UPDATE post SET isDeleted=0 WHERE pID=%s", jsonObject.getString("post")));
-            RestApplication.DATABASE.execUpdate(String.format("UPDATE thread SET posts=posts+1 WHERE tID=(SELECT tID FROM post WHERE pID=%s)", jsonObject.getString("post")));
+            RestApplication.DATABASE.execUpdate(
+                    String.format("UPDATE post SET isDeleted=0 WHERE pID=%s; UPDATE thread SET posts=posts+1 WHERE tID=(SELECT thread FROM post WHERE pID=%s)",
+                            jsonObject.getString("post"), jsonObject.getString("post"))
+            );
 
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);

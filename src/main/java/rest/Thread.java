@@ -8,6 +8,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -38,10 +39,13 @@ public class Thread {
             final JSONObject jsonObject = new JSONObject(input);
 
             final String values = String.format("'%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s'",
-                    jsonObject.get("forum"), jsonObject.get("title"), (jsonObject.getBoolean("isClosed") ? '1' : '0'), jsonObject.get("user"), jsonObject.get("date"), jsonObject.get("message"), jsonObject.get("slug"),
-                    jsonObject.has("isDeleted") ? (jsonObject.getBoolean("isDeleted") ? '1' : '0') : '0').replaceAll("'null'", "null");
+                    jsonObject.get("forum"), jsonObject.get("title"), jsonObject.get("user"),
+                    jsonObject.get("date"), jsonObject.get("message"), jsonObject.get("slug"),
+                    (jsonObject.getBoolean("isClosed") ? '1' : '0'),
+                    jsonObject.has("isDeleted") ? (jsonObject.getBoolean("isDeleted") ? '1' : '0') : '0');
 
-            final int tID = RestApplication.DATABASE.execUpdate(String.format("INSERT INTO thread (forum, title, isClosed, user, date, message, slug, isDeleted) VALUES (%s)", values));
+            final int tID = RestApplication.DATABASE.execUpdate(
+                    String.format("INSERT INTO thread (forum, title, user, date, message, slug, isClosed, isDeleted) VALUES (%s)", values));
             jsonObject.put("id", tID);
 
             jsonResult.put("code", 0);
@@ -62,24 +66,29 @@ public class Thread {
     }
 
     public static void threadDetails(String id, JSONObject response) throws SQLException {
-        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         RestApplication.DATABASE.execQuery(String.format("SELECT * FROM thread WHERE tID=%s", id),
                 result -> {
                     result.next();
-                    response.put("date", df.format(new Date(result.getTimestamp("date").getTime())));
-                    response.put("dislikes", result.getInt("dislikes"));
-                    response.put("forum", result.getString("forum"));
-                    response.put("id", result.getInt("tID"));
-                    response.put("isClosed", result.getBoolean("isClosed"));
-                    response.put("isDeleted", result.getBoolean("isDeleted"));
-                    response.put("likes", result.getInt("likes"));
-                    response.put("message", result.getString("message"));
-                    response.put("points", result.getInt("points"));
-                    response.put("posts", result.getInt("posts"));
-                    response.put("slug", result.getString("slug"));
-                    response.put("title", result.getString("title"));
-                    response.put("user", result.getString("user"));
+                    threadDetailstoJSON(result, response);
                 });
+    }
+
+    public static void threadDetailstoJSON(ResultSet result, JSONObject response) throws SQLException {
+        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+        response.put("date", df.format(new Date(result.getTimestamp("date").getTime())));
+        response.put("dislikes", result.getInt("dislikes"));
+        response.put("forum", result.getString("forum"));
+        response.put("id", result.getInt("tID"));
+        response.put("isClosed", result.getBoolean("isClosed"));
+        response.put("isDeleted", result.getBoolean("isDeleted"));
+        response.put("likes", result.getInt("likes"));
+        response.put("message", result.getString("message"));
+        response.put("points", result.getInt("points"));
+        response.put("posts", result.getInt("posts"));
+        response.put("slug", result.getString("slug"));
+        response.put("title", result.getString("title"));
+        response.put("user", result.getString("user"));
     }
 
     @GET
@@ -134,30 +143,23 @@ public class Thread {
         final JSONObject jsonResult = new JSONObject();
 
         try {
-            String query = "";
-            if (params.containsKey("forum")) {
-                final String shortName = params.get("forum")[0];
-                query = String.format("SELECT tID FROM thread WHERE forum='%s'%s ORDER BY date DESC", shortName,
-                        (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
-            } else if (params.containsKey("user")) {
-                final String id = params.get("user")[0];
-                query = String.format("SELECT tID FROM thread WHERE user='%s'%s ORDER BY date DESC", id,
-                        (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
-            }
-
-            if (params.containsKey("order"))
-                query = query.replace("DESC", params.get("order")[0]);
-            if (params.containsKey("limit"))
-                query += " LIMIT " + params.get("limit")[0];
+            final String table = (params.containsKey("forum") ? "forum" : "user");
+            final String query = String.format("SELECT * FROM thread WHERE %s='%s' %s %s %s",
+                    table,
+                    params.get(table)[0],
+                    (params.containsKey("since") ? String.format("AND date >= '%s'", params.get("since")[0]) : ""),
+                    String.format("ORDER BY date %s", ((params.containsKey("order") ? params.get("order")[0] : "desc"))),
+                    (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : "")
+            );
 
             RestApplication.DATABASE.execQuery(query,
                     result -> {
                         final JSONArray jsonArray = new JSONArray();
 
                         while (result.next()) {
-                            final JSONObject post = new JSONObject();
-                            threadDetails(result.getString("tID"), post);
-                            jsonArray.put(post);
+                            final JSONObject thread = new JSONObject();
+                            threadDetailstoJSON(result, thread);
+                            jsonArray.put(thread);
                         }
 
                         jsonResult.put("code", 0);
@@ -193,7 +195,7 @@ public class Thread {
                 if (sort.equals("tree")) {
                     order = "ORDER BY SUBSTRING_INDEX(mpath,'.',1) DESC, mpath ASC";
                 } else if (sort.equals("parent_tree")) {
-                    String subquery = String.format("SELECT DISTINCT SUBSTRING_INDEX(mpath,'.',1) as head FROM post WHERE tID=%s%s ORDER BY head DESC, mpath ASC",
+                    String subquery = String.format("SELECT DISTINCT SUBSTRING_INDEX(mpath,'.',1) as head FROM post WHERE thread=%s%s ORDER BY head DESC",
                     tID, (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
                     if (params.containsKey("order"))
                         subquery = subquery.replace("DESC", params.get("order")[0]);
@@ -209,7 +211,7 @@ public class Thread {
                 }
             }
 
-            String query = String.format("SELECT pID, mpath FROM post WHERE tID=%s%s %s", tID,
+            String query = String.format("SELECT * FROM post WHERE thread=%s%s %s", tID,
                     (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""), order) ;
             if (params.containsKey("order"))
                 query = query.replace("DESC", params.get("order")[0]);
@@ -221,7 +223,7 @@ public class Thread {
                         final JSONArray jsonArray = new JSONArray();
                         while (result.next()) {
                             final JSONObject post = new JSONObject();
-                            Post.postDetails(result.getString("pID"), post);
+                            Post.postDetailstoJSON(result, post);
                             jsonArray.put(post);
                         }
                         jsonResult.put("code", 0);
@@ -307,9 +309,10 @@ public class Thread {
         try {
             final JSONObject jsonObject = new JSONObject(input);
 
-            RestApplication.DATABASE.execUpdate(String.format("UPDATE thread SET isDeleted=1, posts=0 WHERE tID=%s", jsonObject.getString("thread")));
-            RestApplication.DATABASE.execUpdate(String.format("UPDATE post SET isDeleted=1 WHERE tID=%s", jsonObject.getString("thread")));
-
+            RestApplication.DATABASE.execUpdate(
+                    String.format("UPDATE thread SET isDeleted=1, posts=0 WHERE tID=%s; UPDATE post SET isDeleted=1 WHERE thread=%s",
+                            jsonObject.getString("thread"), jsonObject.getString("thread"))
+            );
 
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
@@ -337,8 +340,11 @@ public class Thread {
             final JSONObject jsonObject = new JSONObject(input);
             final String id = jsonObject.getString("thread");
 
-            RestApplication.DATABASE.execUpdate(String.format("UPDATE thread SET isDeleted=0, posts=(SELECT COUNT(*) FROM post WHERE tID=%s) WHERE tID=%s", id, id));
-            RestApplication.DATABASE.execUpdate(String.format("UPDATE post SET isDeleted=0 WHERE tID=%s", jsonObject.getString("thread")));
+            RestApplication.DATABASE.execUpdate(
+                    String.format("UPDATE thread SET isDeleted=0, posts=(SELECT COUNT(*) FROM post WHERE thread=%s) WHERE tID=%s;" +
+                            "UPDATE post SET isDeleted=0 WHERE thread=%s",
+                            id, id, jsonObject.getString("thread"))
+            );
 
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
@@ -365,7 +371,9 @@ public class Thread {
         try {
             final JSONObject jsonObject = new JSONObject(input);
 
-            RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user_thread (user, tID) VALUES ('%s', %s)", jsonObject.getString("user"), jsonObject.getString("thread")));
+            RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user_thread (user, tID) VALUES ('%s', %s)",
+                    jsonObject.getString("user"), jsonObject.getString("thread"))
+            );
 
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
@@ -412,7 +420,9 @@ public class Thread {
         try {
             final JSONObject jsonObject = new JSONObject(input);
 
-            RestApplication.DATABASE.execUpdate(String.format("DELETE FROM user_thread WHERE user='%s' AND tID=%s", jsonObject.getString("user"), jsonObject.getString("thread")));
+            RestApplication.DATABASE.execUpdate(String.format("DELETE FROM user_thread WHERE user='%s' AND tID=%s",
+                    jsonObject.getString("user"), jsonObject.getString("thread"))
+            );
 
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
@@ -441,7 +451,9 @@ public class Thread {
             final JSONObject jsonObject = new JSONObject(input);
             final String id = jsonObject.getString("thread");
 
-            RestApplication.DATABASE.execUpdate(String.format("UPDATE thread SET message='%s', slug='%s' WHERE tID=%s", jsonObject.get("message"), jsonObject.get("slug"), id));
+            RestApplication.DATABASE.execUpdate(String.format("UPDATE thread SET message='%s', slug='%s' WHERE tID=%s",
+                    jsonObject.get("message"), jsonObject.get("slug"), id)
+            );
 
             final JSONObject response = new JSONObject();
             threadDetails(id, response);

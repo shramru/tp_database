@@ -8,6 +8,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.Map;
@@ -36,7 +37,8 @@ public class User {
                     jsonObject.get("username"), jsonObject.get("about"), jsonObject.get("name"), jsonObject.get("email"),
                     jsonObject.has("isAnonymous") ? (jsonObject.getBoolean("isAnonymous") ? '1' : '0') : '0').replaceAll("'null'", "null");
 
-            final int uID = RestApplication.DATABASE.execUpdate(String.format("INSERT INTO user (username, about, name, email, isAnonymous) VALUES (%s)", values));
+            final int uID = RestApplication.DATABASE.execUpdate(
+                    String.format("INSERT INTO user (username, about, name, email, isAnonymous) VALUES (%s)", values));
             jsonObject.put("id", uID);
 
             jsonResult.put("code", 0);
@@ -93,13 +95,20 @@ public class User {
         RestApplication.DATABASE.execQuery(String.format("SELECT * FROM user where email='%s'", email),
                 result -> {
                     result.next();
-                    response.put("about", result.getString("about") == null ? JSONObject.NULL : result.getString("about"));
-                    response.put("email", result.getString("email"));
-                    response.put("id", result.getInt("uID"));
-                    response.put("isAnonymous", result.getBoolean("isAnonymous"));
-                    response.put("name", result.getString("name") == null ? JSONObject.NULL : result.getString("name"));
-                    response.put("username", result.getString("username") == null ? JSONObject.NULL : result.getString("username"));
+                    userDetailstoJSON(result, response);
                 });
+    }
+
+    public static void userDetailstoJSON(ResultSet resultSet, JSONObject response) throws SQLException {
+        final String email = resultSet.getString("email");
+
+        response.put("about", resultSet.getString("about") == null ? JSONObject.NULL : resultSet.getString("about"));
+        response.put("email", email);
+        response.put("id", resultSet.getInt("uID"));
+        response.put("isAnonymous", resultSet.getBoolean("isAnonymous"));
+        response.put("name", resultSet.getString("name") == null ? JSONObject.NULL : resultSet.getString("name"));
+        response.put("username", resultSet.getString("username") == null ? JSONObject.NULL : resultSet.getString("username"));
+
         RestApplication.DATABASE.execQuery(
                 String.format("SELECT follower FROM user_user WHERE followee='%s'", email),
                 result -> {
@@ -230,13 +239,12 @@ public class User {
         final JSONObject jsonResult = new JSONObject();
 
         try {
-           final String email = params.get("user")[0];
-            String query = String.format("SELECT follower FROM user_user uu JOIN user u ON uu.follower=u.email WHERE followee='%s'%s ORDER BY name DESC", email,
-                    (params.containsKey("since_id") ? String.format(" AND uID >= %s", params.get("since_id")[0]) : ""));
-            if (params.containsKey("order"))
-                query = query.replace("DESC", params.get("order")[0]);
-            if (params.containsKey("limit"))
-                query += " LIMIT " + params.get("limit")[0];
+            final String query = String.format("SELECT u.* FROM user_user uu JOIN user u ON uu.follower=u.email WHERE followee='%s' %s %s %s",
+                    params.get("user")[0],
+                    (params.containsKey("since_id") ? String.format("AND uID >= %s", params.get("since_id")[0]) : ""),
+                    String.format("ORDER BY name %s", ((params.containsKey("order") ? params.get("order")[0] : "desc"))),
+                    (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : "")
+            );
 
             RestApplication.DATABASE.execQuery(query,
                     result -> {
@@ -244,7 +252,7 @@ public class User {
 
                         while (result.next()) {
                             final JSONObject user = new JSONObject();
-                            userDetails(result.getString("follower"), user);
+                            userDetailstoJSON(result, user);
                             jsonArray.put(user);
                         }
 
@@ -273,13 +281,12 @@ public class User {
         final JSONObject jsonResult = new JSONObject();
 
         try {
-            final String email = params.get("user")[0];
-            String query = String.format("SELECT followee FROM user_user uu JOIN user u ON uu.followee=u.email WHERE follower='%s'%s ORDER BY name DESC", email,
-                    (params.containsKey("since_id") ? String.format(" AND uID >= %s", params.get("since_id")[0]) : ""));
-            if (params.containsKey("order"))
-                query = query.replace("DESC", params.get("order")[0]);
-            if (params.containsKey("limit"))
-                query += " LIMIT " + params.get("limit")[0];
+            final String query = String.format("SELECT u.* FROM user_user uu JOIN user u ON uu.followee=u.email WHERE follower='%s' %s %s %s",
+                    params.get("user")[0],
+                    (params.containsKey("since_id") ? String.format("AND uID >= %s", params.get("since_id")[0]) : ""),
+                    String.format("ORDER BY name %s", ((params.containsKey("order") ? params.get("order")[0] : "desc"))),
+                    (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : "")
+            );
 
             RestApplication.DATABASE.execQuery(query,
                     result -> {
@@ -287,7 +294,7 @@ public class User {
 
                         while (result.next()) {
                             final JSONObject user = new JSONObject();
-                            userDetails(result.getString("followee"), user);
+                            userDetailstoJSON(result, user);
                             jsonArray.put(user);
                         }
 
@@ -316,13 +323,12 @@ public class User {
         final JSONObject jsonResult = new JSONObject();
 
         try {
-            final String email = params.get("user")[0];
-            String query = String.format("SELECT pID FROM post WHERE user='%s'%s ORDER BY date DESC", email,
-                    (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
-            if (params.containsKey("order"))
-                query = query.replace("DESC", params.get("order")[0]);
-            if (params.containsKey("limit"))
-                query += " LIMIT " + params.get("limit")[0];
+            final String query = String.format("SELECT * FROM post WHERE user='%s' %s %s %s",
+                    params.get("user")[0],
+                    (params.containsKey("since") ? String.format("AND date >= '%s'", params.get("since")[0]) : ""),
+                    String.format("ORDER BY date %s", ((params.containsKey("order") ? params.get("order")[0] : "desc"))),
+                    (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : "")
+            );
 
             RestApplication.DATABASE.execQuery(query,
                     result -> {
@@ -330,7 +336,7 @@ public class User {
 
                         while (result.next()) {
                             final JSONObject post = new JSONObject();
-                            Post.postDetails(result.getString("pID"), post);
+                            Post.postDetailstoJSON(result, post);
                             jsonArray.put(post);
                         }
 
@@ -362,7 +368,9 @@ public class User {
             final JSONObject jsonObject = new JSONObject(input);
             final String email = jsonObject.getString("user");
 
-            RestApplication.DATABASE.execUpdate(String.format("UPDATE user SET about='%s', name='%s' WHERE email='%s'", jsonObject.get("about"), jsonObject.get("name"), email).replaceAll("'null'", "null"));
+            RestApplication.DATABASE.execUpdate(String.format("UPDATE user SET about='%s', name='%s' WHERE email='%s'",
+                    jsonObject.get("about"), jsonObject.get("name"), email).replaceAll("'null'", "null")
+            );
 
             final JSONObject response = new JSONObject();
             userDetails(email, response);
