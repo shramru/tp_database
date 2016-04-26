@@ -24,10 +24,7 @@ public class Database {
         dataSource.setInitialSize(10);
         dataSource.setMinIdle(10);
         dataSource.setMaxIdle(50);
-        dataSource.setTestWhileIdle(true);
         dataSource.setTestOnBorrow(true);
-        dataSource.setTestOnReturn(false);
-        dataSource.setValidationQuery("SELECT 1");
         dataSource.setValidationQueryTimeout(30000);
         dataSource.setTimeBetweenEvictionRunsMillis(5000);
         dataSource.setMaxWaitMillis(10000);
