@@ -13,6 +13,7 @@ public class Database {
 
     final BasicDataSource dataSource;
 
+    @SuppressWarnings("MagicNumber")
     public Database() {
         dataSource = new BasicDataSource();
         dataSource.setDriverClassName("com.mysql.jdbc.Driver");
@@ -20,7 +21,8 @@ public class Database {
         dataSource.setUsername("www-data");
         dataSource.setPassword("technopark");
         dataSource.setMaxTotal(-1);
-        dataSource.setMaxIdle(-1);
+        dataSource.setMinIdle(15);
+        dataSource.setMaxIdle(50);
     }
 
     public void execQuery(String query, ResultHandler handler) throws SQLException {
@@ -32,6 +34,7 @@ public class Database {
                 }
             }
         }
+        System.out.println(dataSource.getNumActive());
     }
 
     public <T> T execQuery(String query, TResultHandler<T> handler) throws SQLException {

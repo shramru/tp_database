@@ -70,7 +70,7 @@ public class Forum {
     private static void forumDuplicate(Database database, String input, JSONObject jsonResult) {
         try {
             final JSONObject jsonObject = new JSONObject(input);
-            database.execQuery(String.format("SELECT fID FROM forum WHERE short_name=%s", jsonObject.getString("short_name")),
+            database.execQuery(String.format("SELECT fID FROM forum WHERE short_name='%s'", jsonObject.getString("short_name")),
                     result -> {
                         result.next();
                         jsonObject.put("id", result.getInt("fID"));
