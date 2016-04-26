@@ -21,16 +21,9 @@ public class Database {
         dataSource.setUsername("www-data");
         dataSource.setPassword("technopark");
         dataSource.setMaxTotal(100);
-        dataSource.setInitialSize(10);
-        dataSource.setMinIdle(10);
-        dataSource.setMaxIdle(50);
-        dataSource.setTestOnBorrow(true);
-        dataSource.setValidationQueryTimeout(30000);
-        dataSource.setTimeBetweenEvictionRunsMillis(5000);
-        dataSource.setMaxWaitMillis(10000);
-        dataSource.setRemoveAbandonedTimeout(60);
-        dataSource.setLogAbandoned(true);
-        dataSource.setMinEvictableIdleTimeMillis(30000);
+        dataSource.setInitialSize(20);
+        dataSource.setMinIdle(20);
+        dataSource.setMaxIdle(30);
     }
 
     public void execQuery(String query, ResultHandler handler) throws SQLException {
