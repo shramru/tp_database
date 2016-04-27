@@ -1,6 +1,7 @@
 package db;
 
-import org.apache.commons.dbcp2.BasicDataSource;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import java.beans.PropertyVetoException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,19 +12,20 @@ import java.sql.Statement;
  */
 public class Database {
 
-    final BasicDataSource dataSource;
+    ComboPooledDataSource dataSource;
 
     @SuppressWarnings("MagicNumber")
-    public Database() {
-        dataSource = new BasicDataSource();
-        dataSource.setDriverClassName("com.mysql.jdbc.Driver");
-        dataSource.setUrl("jdbc:mysql://localhost:3306/db_techopark?allowMultiQueries=true&autoReconnect=true");
-        dataSource.setUsername("www-data");
+    public Database() throws PropertyVetoException {
+        dataSource = new ComboPooledDataSource();
+        dataSource.setDriverClass("com.mysql.jdbc.Driver");
+        dataSource.setJdbcUrl("jdbc:mysql://localhost:3306/db_techopark?allowMultiQueries=true&autoReconnect=true");
+        dataSource.setUser("www-data");
         dataSource.setPassword("technopark");
-        dataSource.setMaxTotal(100);
-        dataSource.setInitialSize(20);
-        dataSource.setMinIdle(20);
-        dataSource.setMaxIdle(30);
+
+        dataSource.setInitialPoolSize(15);
+        dataSource.setMinPoolSize(15);
+        dataSource.setAcquireIncrement(2);
+        dataSource.setMaxPoolSize(20);
     }
 
     public void execQuery(String query, ResultHandler handler) throws SQLException {
