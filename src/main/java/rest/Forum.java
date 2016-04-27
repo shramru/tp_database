@@ -266,7 +266,7 @@ public class Forum {
         final JSONObject jsonResult = new JSONObject();
 
         try {
-            final String query = String.format("SELECT * FROM user FORCE INDEX(name) WHERE email IN (SELECT DISTINCT user FROM post WHERE forum='%s') %s %s %s",
+            final String query = String.format("SELECT * FROM user WHERE email IN (SELECT DISTINCT user FROM post WHERE forum='%s') %s %s %s",
                     params.get("forum")[0],
                     (params.containsKey("since_id") ? String.format("AND uID >= %s", params.get("since_id")[0]) : ""),
                     String.format("ORDER BY name %s", ((params.containsKey("order") ? params.get("order")[0] : "desc"))),
