@@ -12,7 +12,7 @@ import java.sql.Statement;
  */
 public class Database {
 
-    ComboPooledDataSource dataSource;
+    final ComboPooledDataSource dataSource;
 
     @SuppressWarnings("MagicNumber")
     public Database() throws PropertyVetoException {
@@ -26,7 +26,7 @@ public class Database {
         dataSource.setMinPoolSize(15);
         dataSource.setAcquireIncrement(5);
         dataSource.setMaxPoolSize(150);
-        dataSource.setNumHelperThreads(50);
+        dataSource.setNumHelperThreads(0);
     }
 
     public void execQuery(String query, ResultHandler handler) throws SQLException {
