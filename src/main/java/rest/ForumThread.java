@@ -187,37 +187,32 @@ public class ForumThread {
         final JSONObject jsonResult = new JSONObject();
 
         try {
-            final String tID = params.get("thread")[0];
-            String order = "ORDER BY date DESC";
-            String sort = "";
-            if (params.containsKey("sort")) {
-                sort = params.get("sort")[0];
-                if (sort.equals("tree")) {
-                    order = "ORDER BY SUBSTRING_INDEX(mpath,'.',1) DESC, mpath ASC";
-                } else if (sort.equals("parent_tree")) {
-                    String subquery = String.format("SELECT DISTINCT SUBSTRING_INDEX(mpath,'.',1) as head FROM post WHERE thread=%s%s ORDER BY head DESC",
-                    tID, (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""));
-                    if (params.containsKey("order"))
-                        subquery = subquery.replace("DESC", params.get("order")[0]);
-                    if (params.containsKey("limit"))
-                        subquery += " LIMIT " + params.get("limit")[0];
-                    order = String.format("AND SUBSTRING_INDEX(mpath,'.',1) BETWEEN \n" +
-                            "(SELECT MIN(t.head) FROM \n" +
-                            "(%s) t)\n" +
-                            "AND\n" +
-                            "(SELECT MAX(t.head) FROM\n" +
-                            "(%s) t)\n" +
-                            "ORDER BY SUBSTRING_INDEX(mpath,'.',1) DESC, mpath ASC", subquery, subquery);
+            final String sort = (params.containsKey("sort") ? params.get("sort")[0] : "flat");
+            final String query;
+            if (sort.equals("parent_tree")) {
+                final String order = params.containsKey("order") ? params.get("order")[0] : "desc";
+                query = String.format("SELECT * FROM post p JOIN " +
+                        "(SELECT DISTINCT SUBSTRING_INDEX(mpath,'.',1) as head FROM post WHERE thread=%s ORDER BY head %s %s) t ON mpath LIKE CONCAT(t.head, '%%') " +
+                        "%s ORDER BY t.head %s, mpath ASC",
+                        params.get("thread")[0], order,
+                        (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : ""),
+                        (params.containsKey("since") ? String.format("WHERE date >= '%s'", params.get("since")[0]) : ""),
+                        order);
+            } else {
+                final String order;
+                if (sort.equals("flat")) {
+                    order = String.format("ORDER BY date %s", ((params.containsKey("order") ? params.get("order")[0] : "desc")));
+                } else {
+                    order = String.format("ORDER BY SUBSTRING_INDEX(mpath,'.',1) %s, mpath ASC", ((params.containsKey("order") ? params.get("order")[0] : "desc")));
                 }
+
+                query = String.format("SELECT * FROM post WHERE thread=%s %s %s %s",
+                        params.get("thread")[0],
+                        (params.containsKey("since") ? String.format("AND date >= '%s'", params.get("since")[0]) : ""),
+                        order,
+                        (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : "")
+                );
             }
-
-            String query = String.format("SELECT * FROM post WHERE thread=%s%s %s", tID,
-                    (params.containsKey("since") ? String.format(" AND date >= '%s'", params.get("since")[0]) : ""), order) ;
-            if (params.containsKey("order"))
-                query = query.replace("DESC", params.get("order")[0]);
-            if (params.containsKey("limit") && !sort.equals("parent_tree"))
-                query += " LIMIT " + params.get("limit")[0];
-
             database.execQuery(query,
                     result -> {
                         final JSONArray jsonArray = new JSONArray();
