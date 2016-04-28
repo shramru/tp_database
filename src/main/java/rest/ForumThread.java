@@ -340,11 +340,8 @@ public class ForumThread {
             final JSONObject jsonObject = new JSONObject(input);
             final String id = jsonObject.getString("thread");
 
-            database.execUpdate(
-                    String.format("UPDATE thread SET isDeleted=0, posts=(SELECT COUNT(*) FROM post WHERE thread=%s) WHERE tID=%s;" +
-                            "UPDATE post SET isDeleted=0 WHERE thread=%s",
-                            id, id, jsonObject.getString("thread"))
-            );
+            final int count = database.execUpdate(String.format("UPDATE post SET isDeleted=0 WHERE thread=%s", jsonObject.getString("thread")));
+            database.execUpdate(String.format("UPDATE thread SET isDeleted=0, posts=%d WHERE tID=%s", count, id));
 
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);

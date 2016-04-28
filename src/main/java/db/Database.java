@@ -53,8 +53,7 @@ public class Database {
     public int execUpdate(String update) throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
             try (Statement stmt = connection.createStatement()) {
-                stmt.executeUpdate(update, Statement.RETURN_GENERATED_KEYS);
-                int res = -1;
+                int res = stmt.executeUpdate(update, Statement.RETURN_GENERATED_KEYS);
 
                 try (ResultSet result = stmt.getGeneratedKeys()) {
                     if (result.next()) { res = result.getInt(1); }
