@@ -5,7 +5,7 @@ USE `db_techopark`;
 --
 -- Host: localhost    Database: db_techopark
 -- ------------------------------------------------------
--- Server version	5.6.30-0ubuntu0.15.10.1
+-- Server version 5.7.12
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -65,7 +65,7 @@ CREATE TABLE `post` (
   KEY `user_date` (`user`,`date`),
   KEY `forum_date` (`forum`,`date`),
   KEY `thread_date` (`thread`,`date`)
-) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -109,8 +109,8 @@ CREATE TABLE `user` (
   `about` text CHARACTER SET utf8,
   `name` char(50) CHARACTER SET utf8 DEFAULT NULL,
   `email` char(30) CHARACTER SET utf8 NOT NULL,
-  PRIMARY KEY (`uID`),
-  UNIQUE KEY `email_UNIQUE` (`email`) USING BTREE,
+  PRIMARY KEY (`email`),
+  UNIQUE KEY `id` (`uID`),
   KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -144,7 +144,7 @@ CREATE TABLE `user_user` (
   `followee` char(30) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `follower_followee` (`follower`,`followee`),
-  KEY `followee` (`followee`)
+  KEY `followee_follower` (`followee`,`follower`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -254,4 +254,4 @@ ALTER DATABASE `db_techopark` CHARACTER SET utf8 COLLATE utf8_unicode_ci ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-04-26 23:45:11
+-- Dump completed on 2016-04-28 14:52:48
