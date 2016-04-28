@@ -213,6 +213,7 @@ public class ForumThread {
                         (params.containsKey("limit") ? String.format("LIMIT %s", params.get("limit")[0]) : "")
                 );
             }
+
             database.execQuery(query,
                     result -> {
                         final JSONArray jsonArray = new JSONArray();
