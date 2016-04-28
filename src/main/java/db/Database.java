@@ -18,7 +18,7 @@ public class Database {
     public Database() throws PropertyVetoException {
         dataSource = new ComboPooledDataSource();
         dataSource.setDriverClass("com.mysql.jdbc.Driver");
-        dataSource.setJdbcUrl("jdbc:mysql://localhost:3306/db_techopark?allowMultiQueries=true&autoReconnect=true&useSSL=false");
+        dataSource.setJdbcUrl("jdbc:mysql://localhost:3306/db_techopark?allowMultiQueries=true&useSSL=false");
         dataSource.setUser("www-data");
         dataSource.setPassword("technopark");
 
