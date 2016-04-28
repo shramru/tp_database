@@ -26,6 +26,7 @@ public class Database {
         dataSource.setMinPoolSize(15);
         dataSource.setAcquireIncrement(5);
         dataSource.setMaxPoolSize(150);
+        dataSource.setNumHelperThreads(50);
     }
 
     public void execQuery(String query, ResultHandler handler) throws SQLException {
