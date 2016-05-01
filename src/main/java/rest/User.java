@@ -14,7 +14,7 @@ import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import static rest.Forum.DUPLICATE_ENTRY;
+import static main.Helper.*;
 
 /**
  * Created by vladislav on 18.03.16.
@@ -35,7 +35,7 @@ public class User {
 
             final String values = String.format("'%s', '%s', '%s', '%s', '%s'",
                     jsonObject.get("username"), jsonObject.get("about"), jsonObject.get("name"), jsonObject.get("email"),
-                    jsonObject.has("isAnonymous") ? (jsonObject.getBoolean("isAnonymous") ? '1' : '0') : '0').replaceAll("'null'", "null");
+                    serializeBoolean(jsonObject.optBoolean("isAnonymous"))).replaceAll("'null'", "null");
 
             final int uID = database.execUpdate(
                     String.format("INSERT INTO user (username, about, name, email, isAnonymous) VALUES (%s)", values));
@@ -46,18 +46,12 @@ public class User {
         } catch (SQLException e) {
             jsonResult.put("code", 5);
             jsonResult.put("response", "User exists");
-            System.out.println("User exists error:");
-            System.out.println(e.getMessage());
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-            System.out.println("User invalid error:");
-            System.out.println(e.getMessage());
         } catch (NoSuchElementException | ClassCastException | NullPointerException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
-            System.out.println("User unknown error:");
-            System.out.println(e.getMessage());
         }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
@@ -163,8 +157,6 @@ public class User {
             } else {
                 jsonResult.put("code", 4);
                 jsonResult.put("response", "Unknown error");
-                System.out.println("User sql error:");
-                System.out.println(e.getMessage());
             }
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
@@ -188,13 +180,9 @@ public class User {
         } catch (SQLException e1) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
-            System.out.println("Forum sql error:");
-            System.out.println(e1.getMessage());
         } catch (ParseException e1) {
             jsonResult.put("code", (e1.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-            System.out.println("Forum invalid error:");
-            System.out.println(e1.getMessage());
         }
     }
 
@@ -218,8 +206,8 @@ public class User {
             jsonResult.put("code", 0);
             jsonResult.put("response", response);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
@@ -377,8 +365,8 @@ public class User {
             jsonResult.put("code", 0);
             jsonResult.put("response", response);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");

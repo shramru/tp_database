@@ -11,14 +11,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import static rest.Forum.DUPLICATE_ENTRY;
+import static main.Helper.*;
 
 /**
  * Created by vladislav on 18.03.16.
@@ -41,8 +39,8 @@ public class ForumThread {
             final String values = String.format("'%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s'",
                     jsonObject.get("forum"), jsonObject.get("title"), jsonObject.get("user"),
                     jsonObject.get("date"), jsonObject.get("message"), jsonObject.get("slug"),
-                    (jsonObject.getBoolean("isClosed") ? '1' : '0'),
-                    jsonObject.has("isDeleted") ? (jsonObject.getBoolean("isDeleted") ? '1' : '0') : '0');
+                    serializeBoolean(jsonObject.getBoolean("isClosed")),
+                    serializeBoolean(jsonObject.optBoolean("isDeleted")));
 
             final int tID = database.execUpdate(
                     String.format("INSERT INTO thread (forum, title, user, date, message, slug, isClosed, isDeleted) VALUES (%s)", values));
@@ -53,13 +51,9 @@ public class ForumThread {
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-            System.out.println("Thread invalid error:");
-            System.out.println(e.getMessage());
         } catch (NoSuchElementException | ClassCastException | NullPointerException | SQLException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
-            System.out.println("Thread unknown error:");
-            System.out.println(e.getMessage());
         }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
@@ -74,9 +68,7 @@ public class ForumThread {
     }
 
     public static void threadDetailstoJSON(ResultSet result, JSONObject response) throws SQLException {
-        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-        response.put("date", df.format(new Date(result.getTimestamp("date").getTime())));
+        response.put("date", DATE_FORMAT.format(new Date(result.getTimestamp("date").getTime())));
         response.put("dislikes", result.getInt("dislikes"));
         response.put("forum", result.getString("forum"));
         response.put("id", result.getInt("tID"));
@@ -191,7 +183,7 @@ public class ForumThread {
             final String query;
             if (sort.equals("parent_tree")) {
                 final String order = params.containsKey("order") ? params.get("order")[0] : "desc";
-                query = String.format("SELECT * FROM post p JOIN " +
+                query = String.format("SELECT p.* FROM post p JOIN " +
                         "(SELECT DISTINCT SUBSTRING_INDEX(mpath,'.',1) as head FROM post WHERE thread=%s ORDER BY head %s %s) t ON mpath LIKE CONCAT(t.head, '%%') " +
                         "%s ORDER BY t.head %s, mpath ASC",
                         params.get("thread")[0], order,
@@ -254,8 +246,8 @@ public class ForumThread {
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
@@ -282,8 +274,8 @@ public class ForumThread {
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
@@ -313,8 +305,8 @@ public class ForumThread {
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
@@ -342,8 +334,8 @@ public class ForumThread {
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
@@ -376,8 +368,6 @@ public class ForumThread {
             } else {
                 jsonResult.put("code", 4);
                 jsonResult.put("response", "Unknown error");
-                System.out.println("Thread sql error:");
-                System.out.println(e.getMessage());
             }
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
@@ -398,8 +388,6 @@ public class ForumThread {
         } catch (ParseException e1) {
             jsonResult.put("code", (e1.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-            System.out.println("Forum invalid error:");
-            System.out.println(e1.getMessage());
         }
     }
 
@@ -420,8 +408,8 @@ public class ForumThread {
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
@@ -453,8 +441,8 @@ public class ForumThread {
             jsonResult.put("code", 0);
             jsonResult.put("response", response);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
@@ -487,8 +475,8 @@ public class ForumThread {
             jsonResult.put("code", 0);
             jsonResult.put("response", response);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");

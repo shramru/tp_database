@@ -11,18 +11,16 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import static main.Helper.*;
 
 /**
  * Created by vladislav on 18.03.16.
  */
-@SuppressWarnings("OverlyComplexMethod")
 @Singleton
 @Path("/post")
 public class Post {
@@ -40,11 +38,11 @@ public class Post {
             final String values = String.format("'%s', %s, '%s', '%s', '%s', %s, %s, %s, %s, %s, %s",
                     jsonObject.getString("date"), jsonObject.getString("thread"), jsonObject.getString("message"),
                     jsonObject.getString("user"), jsonObject.getString("forum"), jsonObject.getString("parent"),
-                    jsonObject.has("isApproved") ? (jsonObject.getBoolean("isApproved") ? '1' : '0') : '0',
-                    jsonObject.has("isHighlighted") ? (jsonObject.getBoolean("isHighlighted") ? '1' : '0') : '0',
-                    jsonObject.has("isEdited") ? (jsonObject.getBoolean("isEdited") ? '1' : '0') : '0',
-                    jsonObject.has("isSpam") ? (jsonObject.getBoolean("isSpam") ? '1' : '0') : '0',
-                    jsonObject.has("isDeleted") ? (jsonObject.getBoolean("isDeleted") ? '1' : '0') : '0');
+                    serializeBoolean(jsonObject.optBoolean("isApproved")),
+                    serializeBoolean(jsonObject.optBoolean("isHighlighted")),
+                    serializeBoolean(jsonObject.optBoolean("isEdited")),
+                    serializeBoolean(jsonObject.optBoolean("isSpam")),
+                    serializeBoolean(jsonObject.optBoolean("isDeleted")));
 
             final int pID = database.execQuery(String.format("CALL insert_post(%s)", values),
                     result -> {
@@ -58,13 +56,9 @@ public class Post {
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
-            System.out.println("Post invalid error:");
-            System.out.println(e.getMessage());
         } catch (NoSuchElementException | ClassCastException | NullPointerException | SQLException e) {
             jsonResult.put("code", 4);
             jsonResult.put("response", "Unknown error");
-            System.out.println("Post unknown error:");
-            System.out.println(e.getMessage());
         }
 
         return Response.status(Response.Status.OK).entity(jsonResult.toString()).build();
@@ -79,9 +73,7 @@ public class Post {
     }
 
     public static void postDetailstoJSON(ResultSet result, JSONObject response) throws SQLException {
-        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-        response.put("date", df.format(new Date(result.getTimestamp("date").getTime())));
+        response.put("date", DATE_FORMAT.format(new Date(result.getTimestamp("date").getTime())));
         response.put("dislikes", result.getInt("dislikes"));
         response.put("forum", result.getString("forum"));
         response.put("id", result.getInt("pID"));
@@ -207,8 +199,8 @@ public class Post {
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
@@ -238,8 +230,8 @@ public class Post {
             jsonResult.put("code", 0);
             jsonResult.put("response", jsonObject);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
@@ -269,8 +261,8 @@ public class Post {
             jsonResult.put("code", 0);
             jsonResult.put("response", response);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
@@ -303,8 +295,8 @@ public class Post {
             jsonResult.put("code", 0);
             jsonResult.put("response", response);
         } catch (SQLException e) {
-            jsonResult.put("code", 5);
-            jsonResult.put("response", "User exists");
+            jsonResult.put("code", 1);
+            jsonResult.put("response", "Not found");
         } catch (ParseException e) {
             jsonResult.put("code", (e.getMessage().contains("not found") ? 3 : 2));
             jsonResult.put("response", "Invalid request");
