@@ -12,10 +12,8 @@ import javax.ws.rs.core.Response;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
+
 import static main.Helper.*;
 
 /**
@@ -103,18 +101,18 @@ public class Post {
             postDetails(database, id, response);
 
             if (params.containsKey("related")) {
-                final String[] related = params.get("related");
-                if (Arrays.asList(related).contains("user")) {
+                final List<String> related = Arrays.asList(params.get("related"));
+                if (related.contains("user")) {
                     final JSONObject user = new JSONObject();
                     User.userDetails(database, response.getString("user"), user);
                     response.put("user", user);
                 }
-                if (Arrays.asList(related).contains("forum")) {
+                if (related.contains("forum")) {
                     final JSONObject forum = new JSONObject();
                     Forum.forumDetails(database, response.getString("forum"), forum);
                     response.put("forum", forum);
                 }
-                if (Arrays.asList(related).contains("thread")) {
+                if (related.contains("thread")) {
                     final JSONObject thread = new JSONObject();
                     ForumThread.threadDetails(database, response.getString("thread"), thread);
                     response.put("thread", thread);
@@ -157,7 +155,6 @@ public class Post {
             database.execQuery(query,
                     result -> {
                         final JSONArray jsonArray = new JSONArray();
-
                         while (result.next()) {
                             final JSONObject post = new JSONObject();
                             Post.postDetailstoJSON(result, post);
@@ -192,8 +189,8 @@ public class Post {
             final JSONObject jsonObject = new JSONObject(input);
 
             database.execUpdate(
-                    String.format("UPDATE post SET isDeleted=1 WHERE pID=%s; UPDATE thread SET posts=posts-1 WHERE tID=(SELECT thread FROM post WHERE pID=%s)",
-                            jsonObject.getString("post"), jsonObject.getString("post"))
+                    String.format("UPDATE post SET isDeleted=1 WHERE pID=%s; UPDATE thread SET posts=posts-1 WHERE tID=(SELECT thread FROM post WHERE pID=%1$s)",
+                            jsonObject.getString("post"))
             );
 
             jsonResult.put("code", 0);
@@ -223,8 +220,8 @@ public class Post {
             final JSONObject jsonObject = new JSONObject(input);
 
             database.execUpdate(
-                    String.format("UPDATE post SET isDeleted=0 WHERE pID=%s; UPDATE thread SET posts=posts+1 WHERE tID=(SELECT thread FROM post WHERE pID=%s)",
-                            jsonObject.getString("post"), jsonObject.getString("post"))
+                    String.format("UPDATE post SET isDeleted=0 WHERE pID=%s; UPDATE thread SET posts=posts+1 WHERE tID=(SELECT thread FROM post WHERE pID=%1$s)",
+                            jsonObject.getString("post"))
             );
 
             jsonResult.put("code", 0);

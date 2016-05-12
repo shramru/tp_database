@@ -12,10 +12,8 @@ import javax.ws.rs.core.Response;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
+
 import static main.Helper.*;
 
 /**
@@ -96,18 +94,18 @@ public class ForumThread {
             threadDetails(database, id, response);
 
             if (params.containsKey("related")) {
-                final String[] related = params.get("related");
-                if (Arrays.asList(related).contains("user")) {
+                final List<String> related = Arrays.asList(params.get("related"));
+                if (related.contains("user")) {
                     final JSONObject user = new JSONObject();
                     User.userDetails(database, response.getString("user"), user);
                     response.put("user", user);
                 }
-                if (Arrays.asList(related).contains("forum")) {
+                if (related.contains("forum")) {
                     final JSONObject forum = new JSONObject();
                     Forum.forumDetails(database, response.getString("forum"), forum);
                     response.put("forum", forum);
                 }
-                if (Arrays.asList(related).contains("thread"))
+                if (related.contains("thread"))
                     throw new NullPointerException();
             }
 
@@ -268,7 +266,6 @@ public class ForumThread {
 
         try {
             final JSONObject jsonObject = new JSONObject(input);
-
             database.execUpdate(String.format("UPDATE thread SET isClosed=1 WHERE tID=%s", jsonObject.getString("thread")));
 
             jsonResult.put("code", 0);
@@ -296,10 +293,9 @@ public class ForumThread {
 
         try {
             final JSONObject jsonObject = new JSONObject(input);
-
             database.execUpdate(
-                    String.format("UPDATE thread SET isDeleted=1, posts=0 WHERE tID=%s; UPDATE post SET isDeleted=1 WHERE thread=%s",
-                            jsonObject.getString("thread"), jsonObject.getString("thread"))
+                    String.format("UPDATE thread SET isDeleted=1, posts=0 WHERE tID=%s; UPDATE post SET isDeleted=1 WHERE thread=%1$s",
+                            jsonObject.getString("thread"))
             );
 
             jsonResult.put("code", 0);
@@ -328,7 +324,7 @@ public class ForumThread {
             final JSONObject jsonObject = new JSONObject(input);
             final String id = jsonObject.getString("thread");
 
-            final int count = database.execUpdate(String.format("UPDATE post SET isDeleted=0 WHERE thread=%s", jsonObject.getString("thread")));
+            final int count = database.execUpdate(String.format("UPDATE post SET isDeleted=0 WHERE thread=%s", id));
             database.execUpdate(String.format("UPDATE thread SET isDeleted=0, posts=%d WHERE tID=%s", count, id));
 
             jsonResult.put("code", 0);
@@ -355,7 +351,6 @@ public class ForumThread {
 
         try {
             final JSONObject jsonObject = new JSONObject(input);
-
             database.execUpdate(String.format("INSERT INTO user_thread (user, tID) VALUES ('%s', %s)",
                     jsonObject.getString("user"), jsonObject.getString("thread"))
             );

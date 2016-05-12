@@ -13,6 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import static main.Helper.*;
@@ -107,9 +108,12 @@ public class Forum {
             forumDetails(database, shortName, response);
 
             if (params.containsKey("related")) {
-                final JSONObject user = new JSONObject();
-                User.userDetails(database, response.getString("user"), user);
-                response.put("user", user);
+                final List<String> related = Arrays.asList(params.get("related"));
+                if (related.contains("user")) {
+                    final JSONObject user = new JSONObject();
+                    User.userDetails(database, response.getString("user"), user);
+                    response.put("user", user);
+                }
             }
 
             jsonResult.put("code", 0);
@@ -152,18 +156,18 @@ public class Forum {
                             Post.postDetailstoJSON(result, post);
 
                             if (params.containsKey("related")) {
-                                final String[] param = params.get("related");
-                                if(Arrays.asList(param).contains("thread")) {
+                                final List<String> related = Arrays.asList(params.get("related"));
+                                if (related.contains("thread")) {
                                     final JSONObject thread = new JSONObject();
                                     ForumThread.threadDetails(database, post.getString("thread"), thread);
                                     post.put("thread", thread);
                                 }
-                                if(Arrays.asList(param).contains("forum")) {
+                                if (related.contains("forum")) {
                                     final JSONObject forum = new JSONObject();
                                     Forum.forumDetails(database, post.getString("forum"), forum);
                                     post.put("forum", forum);
                                 }
-                                if(Arrays.asList(param).contains("user")) {
+                                if (related.contains("user")) {
                                     final JSONObject user = new JSONObject();
                                     User.userDetails(database, post.getString("user"), user);
                                     post.put("user", user);
@@ -214,13 +218,13 @@ public class Forum {
                             ForumThread.threadDetailstoJSON(result, thread);
 
                             if (params.containsKey("related")) {
-                                final String[] param = params.get("related");
-                                if(Arrays.asList(param).contains("forum")) {
+                                final List<String> related = Arrays.asList(params.get("related"));
+                                if (related.contains("forum")) {
                                     final JSONObject forum = new JSONObject();
                                     Forum.forumDetails(database, thread.getString("forum"), forum);
                                     thread.put("forum", forum);
                                 }
-                                if(Arrays.asList(param).contains("user")) {
+                                if (related.contains("user")) {
                                     final JSONObject user = new JSONObject();
                                     User.userDetails(database, thread.getString("user"), user);
                                     thread.put("user", user);
